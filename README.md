@@ -99,3 +99,6 @@ To add support for prefetching, you'll need to:
 - [x] Implement a `StreamBuffer` class to represent stream buffers
 - [x] Modify the `Cache` class to include prefetching logic and stream buffer integration
 - [x] Update the `MemoryHierarchy` class to handle prefetching and collect relevant statistics
+- [ ] Advanced prefetching algorithms like stride-based prefetching or adaptive prefetching that could potentially improve cache performance.
+- [ ] Implementing a complete MESI (Modified-Exclusive-Shared-Invalid) protocol
+- [ ] Validate the correctness of the cache simulator
