@@ -19,10 +19,45 @@ struct CacheSet {
     vector<int> lruOrder;
 };
 
+struct StreamBuffer {
+    bool valid;
+    std::vector<uint32_t> buffer;
+    int lastAccessedIndex;
+
+    StreamBuffer(int size) : valid(false), buffer(size), lastAccessedIndex(-1) {}
+
+    bool access(uint32_t address) {
+        auto it = std::find(buffer.begin(), buffer.end(), address);
+        if (it != buffer.end()) {
+            lastAccessedIndex = std::distance(buffer.begin(), it);
+            return true;
+        }
+        return false;
+    }
+
+    void prefetch(uint32_t address) {
+        valid = true;
+        lastAccessedIndex = 0;
+        buffer[0] = address;
+        for (int i = 1; i < buffer.size(); ++i) {
+            buffer[i] = address + i;
+        }
+    }
+
+    void shift() {
+        if (lastAccessedIndex >= 0) {
+            buffer.erase(buffer.begin(), buffer.begin() + lastAccessedIndex + 1);
+            buffer.resize(buffer.size(), 0);
+            lastAccessedIndex = -1;
+        }
+    }
+};
+
 class Cache {
 public:
-    Cache(int size, int associativity, int blockSize) : 
-        size(size), associativity(associativity), blockSize(blockSize) {
+    Cache(int size, int associativity, int blockSize, bool prefetchEnabled, int prefetchDistance)
+    : size(size), associativity(associativity), blockSize(blockSize),
+      prefetchEnabled(prefetchEnabled), streamBuffer(prefetchDistance) {
         numSets = size / (associativity * blockSize);
         sets.resize(numSets);
         for (auto& set : sets) {
@@ -39,9 +74,10 @@ public:
         int setIndex = (address / blockSize) % numSets;
         auto& set = sets[setIndex];
 
+        // Check if the requested block is already present in the cache
         for (int i = 0; i < associativity; ++i) {
             if (set.blocks[i].valid && set.blocks[i].tag == tag) {
-                // Hit
+                // std::cout << "Cache hit: " << std::hex << address << std::dec << std::endl;
                 if (isWrite) {
                     set.blocks[i].dirty = true;
                 }
@@ -50,7 +86,19 @@ public:
             }
         }
 
+        // Check stream buffer
+        if (streamBuffer.access(address)) {
+            // Stream buffer hit
+            cout << "Stream buffer hit: " << hex << address << dec << endl;
+            if (!isWrite) {
+                // Shift out accessed blocks
+                streamBuffer.shift();
+            }
+            return true;
+        }
+
         // Miss
+        // std::cout << "Cache miss: " << std::hex << address << std::dec << std::endl;
         int victimIndex = set.lruOrder.back();
         auto& victimBlock = set.blocks[victimIndex];
 
@@ -68,6 +116,17 @@ public:
         victimBlock = {true, isWrite, tag};
 
         updateLRU(set, victimIndex);
+
+        // Check for prefetching opportunity
+        if (!isWrite && prefetchEnabled && !streamBuffer.valid) {
+            uint32_t prefetchAddress = address + 1;
+            cout << "Prefetching address: " << hex << "0x" << prefetchAddress << dec << endl;
+            if (nextLevel) {
+                nextLevel->access(prefetchAddress, false, nullptr);
+            }
+            streamBuffer.prefetch(prefetchAddress);
+        }
+
         return false;
     }
 
@@ -90,15 +149,19 @@ private:
     int blockSize;
     int numSets;
     vector<CacheSet> sets;
+
+    StreamBuffer streamBuffer;
+    bool prefetchEnabled;
 };
 
 class MemoryHierarchy {
 public:
-    MemoryHierarchy(int l1Size, int l1Associativity, int l2Size, int l2Associativity, int blockSize) :
-        l1(l1Size, l1Associativity, blockSize),
-        l2(l2Size, l2Associativity, blockSize),
-        blockSize(blockSize),
-        l2Size(l2Size) {}
+    MemoryHierarchy(int l1Size, int l1Associativity, int l2Size, int l2Associativity, int blockSize,
+                    bool prefetchEnabled, int prefetchDistance)
+        : l1(l1Size, l1Associativity, blockSize, prefetchEnabled, prefetchDistance),
+          l2(l2Size, l2Associativity, blockSize, prefetchEnabled, prefetchDistance),
+          blockSize(blockSize),
+          l2Size(l2Size) {}
 
     void access(uint32_t address, bool isWrite) {
         if (!l1.access(address, isWrite, l2Size > 0 ? &l2 : nullptr)) {
@@ -144,18 +207,20 @@ int main(int argc, char* argv[]) {
     int l1Assoc = stoi(argv[3]);
     int l2Size = stoi(argv[4]);
     int l2Assoc = stoi(argv[5]);
-    // int prefN = stoi(argv[6]);
-    // int prefM = stoi(argv[7]);
+    bool prefetchEnabled = stoi(argv[6]) > 0;
+    int prefetchDistance = stoi(argv[7]);
     string traceFile = argv[8];
 
-    // cout << "Block Size: " << blockSize << endl;
-    // cout << "L1 Size: " << l1Size << endl;
-    // cout << "L1 Associativity: " << l1Assoc << endl;
-    // cout << "L2 Size: " << l2Size << endl;
-    // cout << "L2 Associativity: " << l2Assoc << endl;
-    // cout << "Trace File: " << traceFile << endl;
+    cout << "Block Size: " << blockSize << " bytes" << endl;
+    cout << "L1 Size: " << l1Size << " bytes" << endl;
+    cout << "L1 Associativity: " << l1Assoc << endl;
+    cout << "L2 Size: " << l2Size << " bytes" << endl;
+    cout << "L2 Associativity: " << l2Assoc << endl;
+    cout << "Prefetching enabled: " << (prefetchEnabled ? "1 (enabled)" : "0 (disabled)") << endl;
+    cout << "Prefetch distance: " << (prefetchEnabled ? std::to_string(prefetchDistance) : "0 (not applicable)") << endl;
+    cout << "Trace File: " << traceFile << endl;
 
-    MemoryHierarchy hierarchy(l1Size, l1Assoc, l2Size, l2Assoc, blockSize);
+    MemoryHierarchy hierarchy(l1Size, l1Assoc, l2Size, l2Assoc, blockSize, prefetchEnabled, prefetchDistance);
 
     ifstream trace(traceFile);
     string line;
