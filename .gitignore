@@ -1,12 +1,15 @@
-# Prerequisites
-*.d
-*.vscode
+# Build directories
+build/
+bin/
+lib/
+out/
+cmake-build-*/
 
 # Compiled Object files
-*.slo
-*.lo
 *.o
 *.obj
+*.slo
+*.lo
 
 # Precompiled Headers
 *.gch
@@ -17,13 +20,7 @@
 *.dylib
 *.dll
 
-# Fortran module files
-*.mod
-*.smod
-
 # Compiled Static libraries
-*.lai
-*.la
 *.a
 *.lib
 
@@ -31,6 +28,61 @@
 *.exe
 *.out
 *.app
-
-# Cachesim-specific files
 cachesim
+
+# Generated documentation
+docs/generated/
+docs/html/
+docs/xml/
+docs/latex/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+compile_commands.json
+_deps/
+
+# IDE specific files
+.idea/
+.vscode/
+.vs/
+*.swp
+*.swo
+*~
+.DS_Store
+*.code-workspace
+
+# Temporary files
+temp/
+tmp/
+*.log
+*.tmp
+
+# Simulation results
+results/
+*.csv
+*.json
+
+# Generated traces
+traces/generated/
+
+# Dependency files
+*.d
+
+# User-specific config
+config.local.json
+
+# Backup files
+*.bak
+*.backup
+*~
+*.orig
+
+# Core dumps
+core
+core.*
+.cache/
