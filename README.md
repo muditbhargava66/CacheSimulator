@@ -1,104 +1,238 @@
-# Cache and Memory Hierarchy Simulator
+<div align="center">
 
-This is a C++ implementation of a cache and memory hierarchy simulator. The simulator models the behavior of a two-level cache hierarchy with configurable parameters such as cache sizes, associativity, block size, and prefetching. It processes memory access traces and reports various statistics.
+# Cache Simulator
+
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![C++17](https://img.shields.io/badge/C%2B%2B-17-orange)
+![License](https://img.shields.io/badge/license-MIT-green)
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)
+[![Contributors](https://img.shields.io/github/contributors/muditbhargava66/CacheSimulator)](https://github.com/muditbhargava66/CacheSimulator/graphs/contributors)
+[![Last Commit](https://img.shields.io/github/last-commit/muditbhargava66/CacheSimulator)](https://github.com/muditbhargava66/CacheSimulator/commits/main)
+[![Open Issues](https://img.shields.io/github/issues/muditbhargava66/CacheSimulator)](https://github.com/muditbhargava66/CacheSimulator/issues)
+[![Open PRs](https://img.shields.io/github/issues-pr/muditbhargava66/CacheSimulator)](https://github.com/muditbhargava66/CacheSimulator/pulls)
+[![GitHub stars](https://img.shields.io/github/stars/muditbhargava66/CacheSimulator)](https://github.com/muditbhargava66/CacheSimulator/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/muditbhargava66/CacheSimulator)](https://github.com/muditbhargava66/CacheSimulator/network/members)
+
+**A comprehensive, high-performance cache and memory hierarchy simulator with advanced features for prefetching, cache coherence, and detailed performance analysis. Written in modern C++17.**
+</div>
 
 ## Features
 
-- Configurable L1 and L2 cache parameters (size, associativity, block size)
-- Write-back and write-allocate policies
-- LRU replacement policy
-- Memory access traces processed from a file
-- Computation of cache access statistics (hits, misses, reads, writes)
-- Stream buffer prefetching support
+- **Configurable Cache Hierarchy**
+  - Flexible L1 and L2 cache configurations
+  - Adjustable block size, associativity, and cache size
+  - Multiple replacement policies (LRU, Pseudo-LRU, FIFO)
+
+- **Advanced Prefetching Mechanisms**
+  - Stream buffer prefetching
+  - Stride-based prefetching with pattern detection
+  - Adaptive prefetching with multiple strategies
+  - Dynamic prefetch distance adjustment
+
+- **Cache Coherence Support**
+  - MESI (Modified-Exclusive-Shared-Invalid) protocol implementation
+  - Detailed tracking of coherence state transitions
+  - Support for multi-processor simulations
+
+- **Sophisticated Trace Analysis**
+  - Memory access pattern detection
+  - Detailed statistics gathering and reporting
+  - Performance visualization tools
+  - Trace file generation utilities
+
+- **Modern C++17 Design**
+  - Smart pointer memory management
+  - Optional and variant for safer interfaces
+  - String view for efficient text processing
+  - Filesystem for portable file operations
+  - Structured bindings and other modern features
 
 ## Requirements
 
-- C++ compiler with C++11 support
-- Make (optional, for using the provided Makefile)
+- C++17 compatible compiler (GCC 7+, Clang 5+, MSVC 19.14+)
+- CMake 3.14+ (for CMake build) or GNU Make
+- Bash shell for running the simulation scripts
+
+## Building
+
+### Using CMake (Recommended)
+
+```bash
+# Create build directory
+mkdir build && cd build
+
+# Configure
+cmake ..
+
+# Build
+cmake --build .
+
+# Run tests
+ctest
+```
+
+### Using Make
+
+```bash
+# Build all targets
+make
+
+# Build with debug symbols
+make debug
+
+# Build and run tests
+make test
+make run_tests
+```
 
 ## Usage
 
-### Compilation
-
-To compile the simulator, run the following command:
+### Basic Usage
 
 ```bash
-g++ -std=c++11 -O3 cachesim.cpp -o cachesim
+# Run with default configuration
+./build/bin/cachesim <BLOCKSIZE> <L1_SIZE> <L1_ASSOC> <L2_SIZE> <L2_ASSOC> <PREF_N> <PREF_M> <trace_file>
+
+# Example
+./build/bin/cachesim 64 32768 4 262144 8 1 4 traces/trace1.txt
 ```
 
-Alternatively, you can use the provided Makefile by running:
+Parameters:
+- `BLOCKSIZE`: Cache block size in bytes (power of 2)
+- `L1_SIZE`: L1 cache size in bytes
+- `L1_ASSOC`: L1 cache associativity
+- `L2_SIZE`: L2 cache size in bytes (0 to disable L2)
+- `L2_ASSOC`: L2 cache associativity
+- `PREF_N`: Enable prefetching (1) or disable (0)
+- `PREF_M`: Prefetch distance
+- `trace_file`: Path to memory access trace file
+
+### Running Benchmark Scripts
 
 ```bash
-make
+# Run the benchmarking script
+./scripts/run_simulations.sh
+
+# Custom options
+./scripts/run_simulations.sh --simulator ./build/bin/cachesim --traces ./my_traces --results ./my_results
 ```
 
-### Running the Simulator
-
-To run the simulator, use the following command:
+### Generating Trace Files
 
 ```bash
-./cachesim <BLOCKSIZE> <L1_SIZE> <L1_ASSOC> <L2_SIZE> <L2_ASSOC> <PREF_N> <PREF_M> <trace_file>
+# Generate a sequential trace
+./build/bin/tools/trace_generator -o sequential.txt -p sequential -n 5000
+
+# Generate a random trace
+./build/bin/tools/trace_generator -o random.txt -p random -w 0.5
+
+# Generate all standard trace patterns
+./build/bin/tools/trace_generator --generate-all traces/generated/
 ```
 
-- `BLOCKSIZE`: The size of each cache block in bytes (must be a power of 2)
-- `L1_SIZE`: The total size of the L1 cache in bytes
-- `L1_ASSOC`: The associativity of the L1 cache (1 for direct-mapped)
-- `L2_SIZE`: The total size of the L2 cache in bytes (0 for no L2 cache)
-- `L2_ASSOC`: The associativity of the L2 cache (1 for direct-mapped)
-- `PREF_N`: Enable prefetching (1) or disable prefetching (0)
-- `PREF_M`: Prefetch distance (number of blocks to prefetch ahead)
-- `trace_file`: The path to the memory access trace file
+## Trace File Format
 
-Example:
-```bash
-./cachesim 64 1024 2 4096 4 1 8 traces/trace1.txt
-```
-
-### Trace File Format
-
-The memory access trace file should contain one memory access per line, with the following format:
+The simulator reads memory access traces in the following format:
 
 ```
 r|w <hex_address>
 ```
 
-- `r` for a read access, `w` for a write access
-- `hex_address`: The memory address in hexadecimal format
+- `r`: Read operation
+- `w`: Write operation
+- `<hex_address>`: Memory address in hexadecimal (e.g., 0x1000)
 
 Example:
 ```
-r 0x1234
-w 0x5678
-r 0xabcd
+r 0x1000
+w 0x2000
+r 0x1040
 ```
 
-## Simulator Structure
+## Documentation
 
-The main components of the simulator are:
+Detailed documentation is available in the `docs/` directory:
 
-- `CacheBlock`: Represents a single cache block, storing the valid bit, dirty bit, tag, and data
-- `CacheSet`: Represents a cache set, containing a vector of cache blocks and an LRU order
-- `StreamBuffer`: Represents a stream buffer for prefetching, storing prefetched blocks and managing the buffer
-- `Cache`: Represents a cache module with configurable size, associativity, block size, and prefetching support
-- `MemoryHierarchy`: Represents the entire memory hierarchy, containing L1 and L2 cache instances
+- [Design Documentation](docs/design.md): Architecture and design details
+- [API Reference](docs/generated/html/index.html): Generated API documentation (requires running `make docs`)
+- [Examples](docs/examples.md): Usage examples and case studies
 
-The `main` function parses the command-line arguments, creates a `MemoryHierarchy` instance, and processes the memory accesses from the trace file. Finally, it prints the cache access statistics.
+## Project Structure
 
-## Prefetching Support
+```
+cache-simulator/
+├── src/                    # Source code
+│   ├── core/               # Core simulator components
+│   ├── utils/              # Utility functions
+│   └── main.cpp            # Main entry point
+├── tests/                  # Tests
+│   ├── unit/               # Unit tests
+│   └── validation/         # Validation tests
+├── tools/                  # Tools and utilities
+│   └── trace_generator.cpp # Trace file generator
+├── traces/                 # Example trace files
+├── scripts/                # Scripts for automation
+├── docs/                   # Documentation
+├── CMakeLists.txt          # CMake build configuration
+├── Makefile                # Make build configuration
+└── README.md               # This file
+```
 
-The simulator now includes support for stream buffer prefetching. When prefetching is enabled (`PREF_N` set to 1), the cache will attempt to prefetch blocks ahead of the current access based on the specified prefetch distance (`PREF_M`).
+## Performance Tips
 
-The `StreamBuffer` class manages the prefetched blocks and handles the prefetching logic. When a cache miss occurs and prefetching is enabled, the cache will check the stream buffer for the requested block. If found, it counts as a stream buffer hit. If not found, the cache will initiate a prefetch operation to bring the subsequent blocks into the stream buffer.
+- Use optimized builds for large trace files (`-O3` optimization)
+- Adjust cache parameters based on the workload characteristics
+- Enable prefetching for sequential or strided access patterns
+- Use adaptive prefetching for mixed access patterns
+- For large traces, consider using the batch processing mode
 
-The cache access statistics now include stream buffer hits and prefetch-related information.
+## Contributing
 
-## Extending the Simulator
+Contributions are welcome! Please feel free to submit a pull request.
 
-To add support for prefetching, you'll need to:
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a pull request
 
-- [x] Implement a `StreamBuffer` class to represent stream buffers
-- [x] Modify the `Cache` class to include prefetching logic and stream buffer integration
-- [x] Update the `MemoryHierarchy` class to handle prefetching and collect relevant statistics
-- [ ] Advanced prefetching algorithms like stride-based prefetching or adaptive prefetching that could potentially improve cache performance.
-- [ ] Implementing a complete MESI (Modified-Exclusive-Shared-Invalid) protocol
-- [ ] Validate the correctness of the cache simulator
+Please ensure your code follows the project's coding style and includes appropriate tests.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Inspired by academic cache simulation tools
+- Built with modern C++17 features for performance and safety
+- Special thanks to all contributors and testers
+
+## Citation
+
+If you use this simulator in your research, please cite it as:
+
+```
+@software{CacheSimulator,
+  author = {Mudit Bhargava},
+  title = {Cache Simulator: A C++17 Cache and Memory Hierarchy Simulator},
+  year = {2025},
+  url = {https://github.com/muditbhargava66/CacheSimulator}
+}
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a pull request.
+
+<div align="center">
+
+---
+⭐️ Star the repo and consider contributing!  
+  
+📫 **Contact**: [@muditbhargava66](https://github.com/muditbhargava66)
+🐛 **Report Issues**: [Issue Tracker](https://github.com/muditbhargava66/CacheSimulator/issues)
+  
+© 2025 Mudit Bhargava. [MIT License](LICENSE)  
+<!-- Copyright symbol using HTML entity for better compatibility -->
+</div>
