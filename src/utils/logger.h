@@ -209,13 +209,53 @@ protected:
     }
     
 private:
-    // Helper for string formatting (similar to std::format in C++20)
+    // String formatting helper using variadic templates
+    template<typename T>
+    static void formatHelper(std::ostringstream& oss, std::string_view format, size_t pos, T&& value) {
+        // Find the next {} placeholder
+        size_t placeholderPos = format.find("{}", pos);
+        
+        if (placeholderPos != std::string_view::npos) {
+            // Append everything before the placeholder
+            oss << format.substr(pos, placeholderPos - pos);
+            // Append the value
+            oss << std::forward<T>(value);
+            // Append the rest of the format string
+            oss << format.substr(placeholderPos + 2);
+        } else {
+            // No placeholder found, just append the rest
+            oss << format.substr(pos);
+        }
+    }
+    
+    template<typename T, typename... Args>
+    static void formatHelper(std::ostringstream& oss, std::string_view format, size_t pos, T&& value, Args&&... args) {
+        // Find the next {} placeholder
+        size_t placeholderPos = format.find("{}", pos);
+        
+        if (placeholderPos != std::string_view::npos) {
+            // Append everything before the placeholder
+            oss << format.substr(pos, placeholderPos - pos);
+            // Append the value
+            oss << std::forward<T>(value);
+            // Continue with the rest
+            formatHelper(oss, format, placeholderPos + 2, std::forward<Args>(args)...);
+        } else {
+            // No more placeholders, just append the rest
+            oss << format.substr(pos);
+        }
+    }
+    
+    // Format string with placeholder substitution
     template<typename... Args>
-    static std::string formatString(std::string_view format, Args&&... /*args*/) {
-        // In C++20, we could use std::format
-        // For C++17, this is a simplified version that just returns the format string
-        // In a real implementation, you would use a proper formatting library
-        return std::string(format);
+    static std::string formatString(std::string_view format, Args&&... args) {
+        if constexpr (sizeof...(args) == 0) {
+            return std::string(format);
+        } else {
+            std::ostringstream oss;
+            formatHelper(oss, format, 0, std::forward<Args>(args)...);
+            return oss.str();
+        }
     }
     
     std::string loggerName;               // Name for this logger instance
@@ -227,6 +267,36 @@ private:
     
     // Map of named loggers
     std::unordered_map<std::string, std::shared_ptr<Logger>> namedLoggers;
+    
+    // Buffered logging support (v1.1.0)
+    static constexpr size_t bufferSize = 4096;
+    std::string logBuffer;
+    bool bufferingEnabled = false;
+    
+    // Flush buffer to file
+    void flushBuffer() {
+        if (!logBuffer.empty() && logFile.is_open()) {
+            logFile << logBuffer;
+            logFile.flush();
+            logBuffer.clear();
+        }
+    }
+    
+public:
+    // Enable/disable buffering (v1.1.0)
+    void setBuffering(bool enable) {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (!enable && bufferingEnabled) {
+            flushBuffer();
+        }
+        bufferingEnabled = enable;
+    }
+    
+    // Manual flush (v1.1.0)
+    void flush() {
+        std::lock_guard<std::mutex> lock(mutex);
+        flushBuffer();
+    }
 };
 
 // Convenience macro for getting the logger
