@@ -2,7 +2,7 @@
 
 # Cache Simulator
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![Version](https://img.shields.io/badge/version-1.2.0-blue)
 ![C++17](https://img.shields.io/badge/C%2B%2B-17-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)
@@ -14,6 +14,8 @@
 [![GitHub forks](https://img.shields.io/github/forks/muditbhargava66/CacheSimulator)](https://github.com/muditbhargava66/CacheSimulator/network/members)
 
 **A comprehensive, high-performance cache and memory hierarchy simulator with advanced features for prefetching, cache coherence, and detailed performance analysis. Written in modern C++17.**
+
+![Cache Simulator Banner](assets/github-banner-modern.svg)
 </div>
 
 ## Features

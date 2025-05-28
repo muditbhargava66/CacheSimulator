@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(CacheSimulator VERSION 1.1.0 LANGUAGES CXX)
+project(CacheSimulator VERSION 1.2.0 LANGUAGES CXX)
 
 # Set C++17 as the required standard
 set(CMAKE_CXX_STANDARD 17)
@@ -47,6 +47,10 @@ file(GLOB_RECURSE CORE_SOURCES "src/core/*.cpp")
 file(GLOB_RECURSE UTILS_SOURCES "src/utils/*.cpp")
 file(GLOB MAIN_SOURCES "src/main.cpp")
 
+# Explicitly add new v1.1.0 and v1.2.0 source files to ensure they're included
+list(APPEND CORE_SOURCES "src/core/write_policy.cpp")
+# Note: victim_cache.h, parallel_executor.h are header-only
+
 # Define header files
 file(GLOB_RECURSE CORE_HEADERS "src/core/*.h")
 file(GLOB_RECURSE UTILS_HEADERS "src/utils/*.h")
@@ -57,6 +61,10 @@ set(ALL_HEADERS ${CORE_HEADERS} ${UTILS_HEADERS})
 
 # Define library for tests to link against
 add_library(cachesim_lib STATIC ${CORE_SOURCES} ${UTILS_SOURCES})
+
+# Link against threads library for parallel processing
+find_package(Threads REQUIRED)
+target_link_libraries(cachesim_lib ${CMAKE_THREAD_LIBS_INIT})
 
 # Define main executable
 add_executable(cachesim ${MAIN_SOURCES})

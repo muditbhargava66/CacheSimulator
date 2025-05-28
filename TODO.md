@@ -13,37 +13,37 @@ This document outlines the planned enhancements and features for the Cache Simul
 - [ ] Develop tests for multi-processor scenarios
 
 ### 2. Performance Optimization for Large Traces
-- [ ] Implement streaming/chunked trace processing
-- [ ] Add memory-efficient trace parsing
-- [ ] Optimize cache data structures for memory usage
-- [ ] Implement parallel simulation processing
-- [ ] Add progress reporting for long-running simulations
+- [x] Implement streaming/chunked trace processing (v1.1.0 - JSON support)
+- [x] Add memory-efficient trace parsing (v1.1.0 - buffered parsing)
+- [x] Optimize cache data structures for memory usage (v1.1.0 - memory pool)
+- [x] Implement parallel simulation processing (v1.2.0 - thread pool & parallel trace processor)
+- [x] Add progress reporting for long-running simulations (v1.1.0)
 - [ ] Create benchmarks for performance validation
 
 ### 3. Additional Replacement Policies
-- [ ] Implement FIFO (First-In-First-Out) policy
-- [ ] Implement NRU (Not Recently Used) policy
-- [ ] Add Random replacement policy
-- [ ] Implement PLRU (Pseudo-LRU) variants
-- [ ] Create a pluggable policy framework
+- [x] Implement FIFO (First-In-First-Out) policy (v1.1.0)
+- [x] Implement NRU (Not Recently Used) policy (v1.2.0)
+- [x] Add Random replacement policy (v1.1.0)
+- [x] Implement PLRU (Pseudo-LRU) variants (v1.1.0)
+- [x] Create a pluggable policy framework (v1.1.0)
 - [ ] Add comparative analysis tools for policy evaluation
 
 ## Medium Priority
 
 ### 4. Victim Cache Implementation
-- [ ] Design victim cache structure
-- [ ] Implement victim cache lookups and updates
-- [ ] Add victim cache statistical tracking
-- [ ] Create configuration options for victim cache
+- [x] Design victim cache structure (v1.2.0)
+- [x] Implement victim cache lookups and updates (v1.2.0)
+- [x] Add victim cache statistical tracking (v1.2.0)
+- [x] Create configuration options for victim cache (v1.2.0)
 - [ ] Implement tests for victim cache behavior
 - [ ] Add documentation for victim cache usage
 
 ### 5. Different Write Policies
-- [ ] Implement write-through policy
-- [ ] Add no-write-allocate policy
-- [ ] Implement write-combining buffer
+- [x] Implement write-through policy (v1.1.0)
+- [x] Add no-write-allocate policy (v1.2.0)
+- [x] Implement write-combining buffer (v1.2.0)
 - [ ] Create hybrid write policy options
-- [ ] Add statistical tracking for write behavior
+- [x] Add statistical tracking for write behavior (v1.1.0)
 - [ ] Create tests for write policy validation
 
 ### 6. Hierarchical Inclusive/Exclusive Policies
@@ -57,10 +57,10 @@ This document outlines the planned enhancements and features for the Cache Simul
 ## Visualization and User Interface
 
 ### 7. Advanced Visualization
-- [ ] Implement more detailed text-based visualization
-- [ ] Add support for memory access pattern visualization
-- [ ] Create cache state visualization tools
-- [ ] Add statistical charting capabilities
+- [x] Implement more detailed text-based visualization (v1.1.0)
+- [x] Add support for memory access pattern visualization (v1.1.0)
+- [x] Create cache state visualization tools (v1.1.0 - export functionality)
+- [x] Add statistical charting capabilities (v1.2.0 - line charts, pie charts, scatter plots)
 - [ ] Implement trace visualization tools
 - [ ] Add memory hierarchy visualization
 
@@ -131,6 +131,7 @@ Each feature should be implemented with the following in mind:
 
 For reference, these features have already been implemented:
 
+### Pre-v1.1.0
 - ✅ StreamBuffer class for sequential prefetching
 - ✅ Basic prefetching logic in the Cache class
 - ✅ Prefetching statistics in the MemoryHierarchy class
@@ -141,3 +142,16 @@ For reference, these features have already been implemented:
 - ✅ Trace generation and analysis tools
 - ✅ Configuration utilities and statistics tracking
 - ✅ LRU replacement policy implementation
+
+### v1.1.0 Release (2025-05-28)
+- ✅ **Replacement Policy Framework**: Pluggable system supporting LRU, FIFO, Random, and PLRU
+- ✅ **Write-Through Policy**: Alternative to write-back with proper statistics
+- ✅ **Memory Pool Allocator**: Efficient memory management for cache blocks
+- ✅ **Enhanced Error Handling**: CacheConfigError with detailed validation
+- ✅ **JSON Trace Support**: Structured trace file format parsing
+- ✅ **Buffered Logging**: Thread-safe logging with string formatting
+- ✅ **Cache State Export**: Debugging functionality
+- ✅ **Cache Warmup**: Benchmarking without cold-start effects
+- ✅ **Progress Reporting**: For long-running simulations
+- ✅ **Text Visualization**: Memory access patterns and cache state
+- ✅ **GitHub Banners**: Professional SVG designs for social preview

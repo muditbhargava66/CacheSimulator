@@ -2,8 +2,8 @@
  * @file main.cpp
  * @brief Cache Simulator main entry point
  * @author Mudit Bhargava
- * @date 2025-05-27
- * @version 1.1.0
+ * @date 2025-05-29
+ * @version 1.2.0
  *
  * This file contains the main entry point for the Cache Simulator application.
  * It handles command-line argument parsing, configuration loading, and orchestrates
@@ -32,6 +32,8 @@
 #include "utils/profiler.h"
 #include "utils/logger.h"
 #include "utils/benchmark.h"
+#include "utils/parallel_executor.h"
+#include "core/victim_cache.h"
 
 using namespace cachesim;
 namespace fs = std::filesystem;
@@ -48,6 +50,10 @@ struct CommandLineOptions {
     bool help = false;
     bool version = false;
     bool useColors = true;
+    bool parallel = false;
+    size_t numThreads = 0;
+    bool useVictimCache = false;
+    bool showCharts = false;
 };
 
 // Parse command line arguments
@@ -70,6 +76,15 @@ std::optional<CommandLineOptions> parseCommandLine(int argc, char* argv[]) {
             options.useColors = false;
         } else if (arg == "--verbose") {
             options.verbose = true;
+        } else if (arg == "-p" || arg == "--parallel") {
+            options.parallel = true;
+            if (i + 1 < argc && std::isdigit(argv[i+1][0])) {
+                options.numThreads = std::stoi(argv[++i]);
+            }
+        } else if (arg == "--victim-cache") {
+            options.useVictimCache = true;
+        } else if (arg == "--charts") {
+            options.showCharts = true;
         } else if (arg == "-e" || arg == "--export") {
             options.exportResults = true;
             if (i + 1 < argc && argv[i+1][0] != '-') {
@@ -109,6 +124,9 @@ void printUsage(const std::string& programName) {
     std::cout << "  --no-color                 Disable colored output" << std::endl;
     std::cout << "  --verbose                  Enable verbose output" << std::endl;
     std::cout << "  -e, --export [file]        Export results to CSV file" << std::endl;
+    std::cout << "  -p, --parallel [threads]   Enable parallel processing" << std::endl;
+    std::cout << "  --victim-cache             Enable victim cache" << std::endl;
+    std::cout << "  --charts                   Show statistical charts" << std::endl;
     std::cout << std::endl;
     std::cout << "If no configuration file is specified, the simulator uses:" << std::endl;
     std::cout << "  BLOCKSIZE=64 L1_SIZE=32KB L1_ASSOC=4 L2_SIZE=256KB L2_ASSOC=8 PREF=1 PREF_DIST=4" << std::endl;
@@ -118,7 +136,7 @@ void printUsage(const std::string& programName) {
  * Display version information including build details
  */
 void printVersion() {
-    std::cout << "Cache Simulator v1.1.0" << std::endl;
+    std::cout << "Cache Simulator v1.2.0" << std::endl;
     std::cout << "C++17 Edition" << std::endl;
     std::cout << "Copyright (c) 2025 Mudit Bhargava" << std::endl;
     std::cout << "Build Date: " << __DATE__ << " " << __TIME__ << std::endl;

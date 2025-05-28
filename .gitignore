@@ -83,6 +83,6 @@ config.local.json
 *.orig
 
 # Core dumps
-core
-core.*
+# core
+# core.*
 .cache/
