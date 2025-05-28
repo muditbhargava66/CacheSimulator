@@ -1,3 +1,18 @@
+/**
+ * @file main.cpp
+ * @brief Cache Simulator main entry point
+ * @author Mudit Bhargava
+ * @date 2025-05-27
+ * @version 1.1.0
+ *
+ * This file contains the main entry point for the Cache Simulator application.
+ * It handles command-line argument parsing, configuration loading, and orchestrates
+ * the simulation execution including benchmarking and visualization options.
+ *
+ * @copyright Copyright (c) 2025 Mudit Bhargava. All rights reserved.
+ * @license MIT License
+ */
+
 #include <iostream>
 #include <string>
 #include <optional>
@@ -99,11 +114,25 @@ void printUsage(const std::string& programName) {
     std::cout << "  BLOCKSIZE=64 L1_SIZE=32KB L1_ASSOC=4 L2_SIZE=256KB L2_ASSOC=8 PREF=1 PREF_DIST=4" << std::endl;
 }
 
-// Print version information
+/**
+ * Display version information including build details
+ */
 void printVersion() {
-    std::cout << "Cache Simulator v1.0.0" << std::endl;
+    std::cout << "Cache Simulator v1.1.0" << std::endl;
     std::cout << "C++17 Edition" << std::endl;
-    std::cout << "Copyright (c) 2025 Your Name" << std::endl;
+    std::cout << "Copyright (c) 2025 Mudit Bhargava" << std::endl;
+    std::cout << "Build Date: " << __DATE__ << " " << __TIME__ << std::endl;
+    std::cout << "Compiler: " << 
+#ifdef __clang__
+        "Clang " << __clang_major__ << "." << __clang_minor__ << "." << __clang_patchlevel__
+#elif defined(__GNUC__)
+        "GCC " << __GNUC__ << "." << __GNUC_MINOR__ << "." << __GNUC_PATCHLEVEL__
+#elif defined(_MSC_VER)
+        "MSVC " << _MSC_VER
+#else
+        "Unknown"
+#endif
+        << std::endl;
 }
 
 // Run simulation with given configuration

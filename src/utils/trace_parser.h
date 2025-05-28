@@ -28,7 +28,15 @@ struct MemoryAccess {
 enum class ParseErrorType {
     InvalidAccessType,
     InvalidAddressFormat,
-    UnknownError
+    UnknownError,
+    InvalidJSONFormat  // Added in v1.1.0
+};
+
+// Trace format enumeration (v1.1.0)
+enum class TraceFormat {
+    Simple,     // Original r/w hex_address format
+    Extended,   // With PC and thread ID
+    JSON        // JSON format for structured traces
 };
 
 // Parse result type using std::variant (C++17)
@@ -68,11 +76,21 @@ public:
     
     // Get the full file path
     [[nodiscard]] const std::filesystem::path& getFilepath() const { return filepath; }
+    
+    // Auto-detect trace format (v1.1.0)
+    [[nodiscard]] TraceFormat detectFormat();
+    
+    // Set trace format explicitly (v1.1.0)
+    void setFormat(TraceFormat format) { traceFormat = format; }
+    
+    // Get current trace format (v1.1.0)
+    [[nodiscard]] TraceFormat getFormat() const { return traceFormat; }
 
 private:
     std::filesystem::path filepath;
     std::ifstream traceFile;
     bool fileValid;
+    TraceFormat traceFormat;  // Added in v1.1.0
     
     // Statistics
     size_t totalAccesses;
@@ -82,6 +100,9 @@ private:
     
     // Parse a single line from the trace file
     ParseResult parseLine(std::string_view line);
+    
+    // Parse JSON format trace (v1.1.0)
+    ParseResult parseJSONLine(std::string_view line);
     
     // Helper method to parse address in various formats
     std::optional<uint32_t> parseAddress(std::string_view addressStr);
