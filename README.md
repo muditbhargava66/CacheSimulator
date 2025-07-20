@@ -207,16 +207,16 @@ Create custom workloads:
 CacheSimulator/
 ├── src/                       # Source code
 │   ├── core/                  # Core simulation components
-│   │   ├── multiprocessor/    # Multi-processor simulation (v1.2.0)
+│   │   ├── multiprocessor/    # Multi-processor simulation
 │   │   ├── cache.cpp/.h       # Cache implementation
 │   │   ├── memory_hierarchy.cpp/.h
-│   │   ├── victim_cache.h     # Victim cache (v1.2.0)
+│   │   ├── victim_cache.h     # Victim cache implementation
 │   │   ├── replacement_policy.h # Pluggable policies
-│   │   ├── write_policy.cpp/.h  # Write policies (v1.2.0)
+│   │   ├── write_policy.cpp/.h  # Write policies
 │   │   └── adaptive_prefetcher.cpp/.h
 │   ├── utils/                 # Utility classes
-│   │   ├── parallel_executor.h  # Parallel processing (v1.2.0)
-│   │   ├── visualization.h      # Statistical charts (v1.2.0)
+│   │   ├── parallel_executor.h  # Parallel processing
+│   │   ├── visualization.h      # Statistical charts
 │   │   ├── trace_parser.cpp/.h
 │   │   └── config_utils.cpp/.h
 │   └── main.cpp              # Main application entry point
@@ -230,14 +230,12 @@ CacheSimulator/
 ├── docs/                     # Comprehensive documentation
 │   ├── user/                # User guides and tutorials
 │   ├── developer/           # Development documentation
-│   ├── features/            # Feature-specific docs
-│   └── releases/            # Release notes
+│   └──  features/            # Feature-specific docs
 ├── tools/                   # Analysis and generation tools
 ├── configs/                 # Configuration examples
 └── traces/                  # Example trace files
 ```
 
-📋 **See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for detailed organization.**
 
 ## 📖 Documentation
 
@@ -248,10 +246,9 @@ CacheSimulator/
 - **[Architecture](docs/developer/architecture.md)** - System design and implementation
 - **[Contributing](docs/developer/contributing.md)** - Development guidelines
 - **[v1.2.0 Features](docs/features/v1.2.0-features.md)** - New features and capabilities
+- **[Examples](docs/user/examples.md)** - Usage examples and case studies
 
 📚 **See [docs/README.md](docs/README.md) for complete documentation index.**
-- [**Examples**](docs/examples.md) - Usage examples and case studies
-- [**Performance Tuning**](docs/performance.md) - Optimization guide
 
 ## 🧪 Testing
 
@@ -265,16 +262,19 @@ ctest
 ctest -R unit
 ctest -R validation
 
-# Run v1.2.0 feature tests
-./bin/tests/unit/v1.2.0/nru_policy_test
-./bin/tests/unit/v1.2.0/victim_cache_test
-./bin/tests/unit/v1.2.0/parallel_processing_test
-./bin/tests/unit/v1.2.0/visualization_test
+# Run specific feature tests
+ctest -R nru_policy_test
+ctest -R victim_cache_test
+ctest -R parallel_processing_test
+ctest -R visualization_test
+
+# Run performance tests
+ctest -R performance
 ```
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guide](docs/developer/contributing.md) for details.
 
 ### How to Contribute
 1. Fork the repository
@@ -320,22 +320,6 @@ This simulator is ideal for:
 - Learning about memory hierarchies
 - Understanding cache coherence protocols
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Inspired by academic cache simulators and industry tools
-- Built with modern C++17 for performance and maintainability
-- Special thanks to all contributors and testers
-
-## 📧 Contact
-
-- **Author**: Mudit Bhargava
-- **Email**: muditbhargava66@gmail.com
-- **GitHub**: [@muditbhargava66](https://github.com/muditbhargava66)
-
 ---
 
 <div align="center">
@@ -343,5 +327,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **⭐ Star this repo if you find it useful!**
 
 [![Star History Chart](https://api.star-history.com/svg?repos=muditbhargava66/CacheSimulator&type=Date)](https://star-history.com/#muditbhargava66/CacheSimulator&Date)
+
+  
+📫 **Contact**: [@muditbhargava66](https://github.com/muditbhargava66)
+🐛 **Report Issues**: [Issue Tracker](https://github.com/muditbhargava66/CacheSimulator/issues)
+  
+© 2025 Mudit Bhargava. [MIT License](LICENSE)  
+<!-- Copyright symbol using HTML entity for better compatibility -->
 
 </div>
