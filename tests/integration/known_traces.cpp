@@ -99,8 +99,7 @@ public:
             hierarchy.processTrace(traceFile);
             
             // Verify results
-            bool success = expected.compare(hierarchy);
-            assert(success && "Sequential trace test failed");
+            assert(expected.compare(hierarchy) && "Sequential trace test failed");
         }
         
         // Clean up
@@ -140,8 +139,7 @@ public:
             hierarchy.processTrace(traceFile);
             
             // Verify results
-            bool success = expected.compare(hierarchy);
-            assert(success && "Random trace test failed");
+            assert(expected.compare(hierarchy) && "Random trace test failed");
         }
         
         // Clean up
@@ -181,8 +179,7 @@ public:
             hierarchy.processTrace(traceFile);
             
             // Verify results
-            bool success = expected.compare(hierarchy);
-            assert(success && "Mixed trace test failed");
+            assert(expected.compare(hierarchy) && "Mixed trace test failed");
         }
         
         // Clean up
@@ -222,8 +219,7 @@ public:
             hierarchy.processTrace(traceFile);
             
             // Verify results
-            bool success = expected.compare(hierarchy);
-            assert(success && "Loop trace test failed");
+            assert(expected.compare(hierarchy) && "Loop trace test failed");
         }
         
         // Clean up
@@ -263,8 +259,7 @@ public:
                 hierarchy.processTrace(tracePath);
                 
                 // Verify results
-                bool success = expected.compare(hierarchy);
-                assert(success && "Real trace test failed");
+                assert(expected.compare(hierarchy) && "Real trace test failed");
             } else {
                 std::cout << "  Skipping " << filename << " (file not found)" << std::endl;
             }

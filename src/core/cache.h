@@ -184,6 +184,19 @@ public:
     
     // Cache warmup for benchmarking (v1.1.0)
     void warmup(const std::vector<uint32_t>& addresses);
+    
+    // Block state access methods for visualization (v1.2.0)
+    [[nodiscard]] bool isBlockValid(uint32_t setIndex, uint32_t wayIndex) const;
+    [[nodiscard]] bool isBlockDirty(uint32_t setIndex, uint32_t wayIndex) const;
+    [[nodiscard]] uint32_t getBlockTag(uint32_t setIndex, uint32_t wayIndex) const;
+    [[nodiscard]] uint32_t getBlockAccessCount(uint32_t setIndex, uint32_t wayIndex) const;
+    [[nodiscard]] uint64_t getBlockLastAccess(uint32_t setIndex, uint32_t wayIndex) const;
+    [[nodiscard]] bool isBlockPrefetched(uint32_t setIndex, uint32_t wayIndex) const;
+    [[nodiscard]] uint32_t getAssociativity() const { return associativity; }
+    [[nodiscard]] uint32_t getBlockSize() const { return blockSize; }
+    
+    // Get MESI state of a block
+    [[nodiscard]] MESIState getBlockState(uint32_t address) const;
 
 private:
     // Cache parameters
@@ -223,7 +236,7 @@ private:
     
     // Block fetching and eviction
     int findVictim(const CacheSet& set, int setIndex) const; // v1.1.0 - added setIndex
-    void installBlock(uint32_t address, int setIndex, int blockIndex, bool isWrite, Cache* nextLevel);
+    void installBlock(uint32_t address, int setIndex, int blockIndex, bool isWrite, Cache* nextLevel, bool isPrefetch = false);
     
     // C++17 variant to represent either a hit or miss
     using AccessResult = std::variant<int, CacheMissType>; // hit: block index, miss: type

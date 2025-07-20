@@ -14,19 +14,30 @@ struct CacheBlock {
     std::vector<uint8_t> data; // Data stored in this block
     MESIState mesiState;  // Current MESI protocol state
     
+    // Visualization support fields (v1.2.0)
+    uint32_t accessCount;    // Number of times this block was accessed
+    uint64_t lastAccess;     // Timestamp of last access
+    bool prefetched;         // Whether this block was prefetched
+    
     // Default constructor
     CacheBlock() 
         : valid(false), 
           dirty(false), 
           tag(0), 
-          mesiState(MESIState::Invalid) {}
+          mesiState(MESIState::Invalid),
+          accessCount(0),
+          lastAccess(0),
+          prefetched(false) {}
     
     // Constructor with parameters
     CacheBlock(bool valid, bool dirty, uint32_t tag) 
         : valid(valid), 
           dirty(dirty), 
           tag(tag), 
-          mesiState(valid ? MESIState::Exclusive : MESIState::Invalid) {}
+          mesiState(valid ? MESIState::Exclusive : MESIState::Invalid),
+          accessCount(0),
+          lastAccess(0),
+          prefetched(false) {}
     
     // Convenience method to check if block is in modified state
     bool isModified() const {

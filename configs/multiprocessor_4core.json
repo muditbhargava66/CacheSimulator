@@ -1,0 +1,52 @@
+{
+  "name": "Multi-Processor Configuration",
+  "description": "4-core system with MESI coherence protocol",
+  "version": "1.2.0",
+  
+  "multiprocessor": {
+    "numCores": 4,
+    "coherenceProtocol": "MESI",
+    "interconnect": {
+      "type": "Bus",
+      "latency": 10,
+      "bandwidth": 25600
+    }
+  },
+  
+  "perCoreL1": {
+    "size": 32768,
+    "associativity": 4,
+    "blockSize": 64,
+    "replacementPolicy": "LRU",
+    "writePolicy": "WriteBack",
+    "private": true
+  },
+  
+  "sharedL2": {
+    "size": 1048576,
+    "associativity": 16,
+    "blockSize": 64,
+    "replacementPolicy": "NRU",
+    "writePolicy": "WriteBack",
+    "shared": true,
+    "slices": 4
+  },
+  
+  "coherenceController": {
+    "type": "Directory",
+    "trackingGranularity": "block",
+    "snoopFilterSize": 2048
+  },
+  
+  "synchronization": {
+    "atomicOperationsSupported": true,
+    "memoryBarriersSupported": true,
+    "lockElisionEnabled": false
+  },
+  
+  "victimCache": {
+    "enabled": true,
+    "size": 4,
+    "sharedAmongCores": false
+  }
+}

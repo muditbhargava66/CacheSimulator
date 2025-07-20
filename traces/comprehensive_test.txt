@@ -1,0 +1,129 @@
+# Comprehensive v1.2.0 Feature Test Trace
+# Tests all new features: NRU, victim cache, write policies, parallel processing
+
+# Phase 1: Working set establishment (tests NRU reference bits)
+# Access pattern that establishes a working set
+r 0x1000
+r 0x1040
+r 0x1080
+r 0x10c0
+r 0x1100
+r 0x1140
+r 0x1180
+r 0x11c0
+
+# Re-access to set reference bits
+r 0x1000
+r 0x1040
+r 0x1080
+r 0x10c0
+
+# New accesses (NRU should prefer evicting non-referenced blocks)
+r 0x2000
+r 0x2040
+r 0x2080
+r 0x20c0
+
+# Phase 2: Conflict miss pattern (tests victim cache)
+# Access blocks mapping to same set
+r 0x3000  # Set 0
+r 0x4000  # Set 0
+r 0x5000  # Set 0
+r 0x6000  # Set 0
+r 0x7000  # Set 0, causes eviction
+r 0x3000  # Should hit in victim cache
+
+# Phase 3: Write-heavy workload (tests write policies)
+# Burst writes (good for write combining)
+w 0x8000
+w 0x8008
+w 0x8010
+w 0x8018
+w 0x8020
+w 0x8028
+w 0x8030
+w 0x8038
+
+# Scattered writes (tests write-through vs write-back)
+w 0x9000
+r 0x9000
+w 0x9000
+w 0xa000
+r 0xa000
+w 0xa000
+
+# Phase 4: Parallel access pattern (for multi-processor testing)
+# Shared data access
+r 0xb000  # Processor 0
+r 0xb000  # Processor 1 (shared)
+w 0xb000  # Processor 0 (exclusive/modified)
+r 0xb000  # Processor 1 (causes downgrade)
+
+# Phase 5: Mixed pattern (stress test)
+# Sequential
+r 0xc000
+r 0xc040
+r 0xc080
+r 0xc0c0
+
+# Strided
+r 0xd000
+r 0xd100
+r 0xd200
+r 0xd300
+
+# Random with locality
+r 0xe000
+r 0xe008
+r 0xe040
+r 0xe000
+r 0xe048
+r 0xe008
+
+# Phase 6: Large working set (tests all policies together)
+r 0x10000
+w 0x10040
+r 0x10080
+w 0x100c0
+r 0x11000
+w 0x11040
+r 0x11080
+w 0x110c0
+r 0x12000
+w 0x12040
+r 0x12080
+w 0x120c0
+
+# Return to original working set
+r 0x1000
+r 0x1040
+r 0x1080
+r 0x10c0
+
+# Phase 7: Prefetch-friendly pattern
+# Sequential access
+r 0x20000
+r 0x20040
+r 0x20080
+r 0x200c0
+r 0x20100
+r 0x20140
+r 0x20180
+r 0x201c0
+
+# Stride pattern
+r 0x30000
+r 0x30100
+r 0x30200
+r 0x30300
+r 0x30400
+r 0x30500
+
+# This comprehensive trace tests:
+# 1. NRU replacement policy with reference bit patterns
+# 2. Victim cache effectiveness on conflict misses
+# 3. Write combining and write policy differences
+# 4. Multi-processor coherence patterns
+# 5. Mixed access patterns for adaptive prefetching
+# 6. Large working sets that stress the cache hierarchy
+# 7. Prefetch-friendly patterns for validation

@@ -22,6 +22,10 @@
 #include <memory>
 #include <chrono>
 #include <optional>
+#include <numeric>
+#include <algorithm>
+#include <cmath>
+#include <filesystem>
 
 namespace cachesim {
 

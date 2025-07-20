@@ -1,0 +1,67 @@
+# Victim Cache Test Trace
+# Demonstrates conflict misses that benefit from victim cache
+# Uses addresses that map to same cache sets in small caches
+
+# Assume 16KB cache, 4-way set associative, 64-byte blocks
+# This gives us 64 sets (16384 / (4 * 64))
+# Addresses that differ by 4096 (0x1000) map to same set
+
+# Working set that fits in cache
+r 0x1000
+r 0x1040
+r 0x1080
+r 0x10c0
+
+# Access 5 blocks that map to same set (causes conflict)
+r 0x1000  # Set 0, Way 0
+r 0x2000  # Set 0, Way 1  
+r 0x3000  # Set 0, Way 2
+r 0x4000  # Set 0, Way 3
+r 0x5000  # Set 0, Evicts 0x1000 (goes to victim cache)
+
+# Access original block again (victim cache hit)
+r 0x1000  # Should hit in victim cache
+
+# Continue pattern
+r 0x6000  # Evicts 0x2000
+r 0x2000  # Victim cache hit
+r 0x7000  # Evicts 0x3000
+r 0x3000  # Victim cache hit
+
+# Different set to show normal operation
+r 0x1100  # Set 1
+r 0x1140
+r 0x1180
+r 0x11c0
+
+# Back to conflicting set
+r 0x8000  # Set 0, evicts 0x4000
+r 0x4000  # Victim cache hit
+
+# Write operations to test dirty victim blocks
+w 0x9000  # Set 0, evicts 0x5000
+w 0xa000  # Set 0, evicts 0x1000 (dirty)
+r 0x5000  # Victim cache hit
+r 0x1000  # Victim cache hit (was dirty)
+
+# Streaming access that shouldn't pollute victim cache
+r 0x10000
+r 0x10040
+r 0x10080
+r 0x100c0
+r 0x10100
+r 0x10140
+r 0x10180
+r 0x101c0
+
+# Return to working set
+r 0x1000
+r 0x2000
+r 0x3000
+r 0x4000
+
+# This trace shows:
+# 1. Conflict misses in direct-mapped or low-associativity caches
+# 2. Victim cache capturing recently evicted blocks
+# 3. Dirty block handling in victim cache
+# 4. Benefit of victim cache for working sets slightly larger than cache capacity

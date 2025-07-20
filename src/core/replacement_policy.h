@@ -113,13 +113,13 @@ public:
     int selectVictim(const std::vector<bool>& validBlocks) override {
         // Return least recently used valid block
         for (auto it = lruOrder_.rbegin(); it != lruOrder_.rend(); ++it) {
-            if (*it < validBlocks.size() && validBlocks[*it]) {
+            if (static_cast<size_t>(*it) < validBlocks.size() && validBlocks[*it]) {
                 return *it;
             }
         }
         // Fallback: return first valid block
-        for (int i = 0; i < validBlocks.size(); ++i) {
-            if (validBlocks[i]) return i;
+        for (size_t i = 0; i < validBlocks.size(); ++i) {
+            if (validBlocks[i]) return static_cast<int>(i);
         }
         return 0;
     }
@@ -143,7 +143,7 @@ private:
 class FIFOPolicy : public ReplacementPolicyBase {
 public:
     explicit FIFOPolicy(int numBlocks) 
-        : numBlocks_(numBlocks), fifoOrder_(numBlocks), nextSlot_(0) {
+        : fifoOrder_(numBlocks) {
         reset();
     }
     
@@ -162,10 +162,10 @@ public:
         int victim = -1;
         uint64_t oldestTime = UINT64_MAX;
         
-        for (int i = 0; i < validBlocks.size(); ++i) {
+        for (size_t i = 0; i < validBlocks.size(); ++i) {
             if (validBlocks[i] && fifoOrder_[i] < oldestTime) {
                 oldestTime = fifoOrder_[i];
-                victim = i;
+                victim = static_cast<int>(i);
             }
         }
         
@@ -180,10 +180,8 @@ public:
     std::string_view getName() const override { return "FIFO"; }
     
 private:
-    int numBlocks_;
     std::vector<uint64_t> fifoOrder_; ///< Installation timestamp for each block
     uint64_t installCounter_ = 0;      ///< Counter for installation order
-    int nextSlot_;
 };
 
 /**
@@ -192,8 +190,8 @@ private:
  */
 class RandomPolicy : public ReplacementPolicyBase {
 public:
-    explicit RandomPolicy(int numBlocks) 
-        : numBlocks_(numBlocks), rng_(std::random_device{}()) {}
+    explicit RandomPolicy(int /* numBlocks */) 
+        : rng_(std::random_device{}()) {}
     
     void onAccess(int blockIndex) override {
         // Random doesn't track accesses
@@ -208,9 +206,9 @@ public:
     int selectVictim(const std::vector<bool>& validBlocks) override {
         // Collect valid block indices
         std::vector<int> validIndices;
-        for (int i = 0; i < validBlocks.size(); ++i) {
+        for (size_t i = 0; i < validBlocks.size(); ++i) {
             if (validBlocks[i]) {
-                validIndices.push_back(i);
+                validIndices.push_back(static_cast<int>(i));
             }
         }
         
@@ -228,7 +226,6 @@ public:
     std::string_view getName() const override { return "Random"; }
     
 private:
-    int numBlocks_;
     mutable std::mt19937 rng_; ///< Random number generator
 };
 
@@ -242,7 +239,7 @@ private:
 class NRUPolicy : public ReplacementPolicyBase {
 public:
     explicit NRUPolicy(int numBlocks) 
-        : numBlocks_(numBlocks), referenceBits_(numBlocks, false), 
+        : referenceBits_(numBlocks, false), 
           accessCounter_(0), clearInterval_(numBlocks * 4) {}
     
     void onAccess(int blockIndex) override {
@@ -262,9 +259,9 @@ public:
     
     int selectVictim(const std::vector<bool>& validBlocks) override {
         // First, try to find a valid block that is not recently used
-        for (int i = 0; i < validBlocks.size(); ++i) {
+        for (size_t i = 0; i < validBlocks.size(); ++i) {
             if (validBlocks[i] && !referenceBits_[i]) {
-                return i;
+                return static_cast<int>(i);
             }
         }
         
@@ -272,8 +269,8 @@ public:
         std::fill(referenceBits_.begin(), referenceBits_.end(), false);
         accessCounter_ = 0;
         
-        for (int i = 0; i < validBlocks.size(); ++i) {
-            if (validBlocks[i]) return i;
+        for (size_t i = 0; i < validBlocks.size(); ++i) {
+            if (validBlocks[i]) return static_cast<int>(i);
         }
         return 0;
     }
@@ -286,7 +283,6 @@ public:
     std::string_view getName() const override { return "NRU"; }
     
 private:
-    int numBlocks_;
     std::vector<bool> referenceBits_;  ///< Track if block was recently used
     int accessCounter_;                ///< Count accesses for periodic clearing
     int clearInterval_;                ///< How often to clear reference bits
@@ -317,11 +313,10 @@ public:
     int selectVictim(const std::vector<bool>& validBlocks) override {
         // Follow tree bits to find victim
         int node = 0;
-        int level = 0;
         int numLevels = static_cast<int>(std::log2(numBlocks_));
         
         for (int i = 0; i < numLevels; ++i) {
-            if (node >= treeBits_.size()) break;
+            if (static_cast<size_t>(node) >= treeBits_.size()) break;
             
             // Go left (0) or right (1) based on tree bit
             if (treeBits_[node]) {
@@ -335,12 +330,12 @@ public:
         int blockIndex = node - (numBlocks_ - 1);
         
         // Ensure we return a valid block
-        if (blockIndex < validBlocks.size() && validBlocks[blockIndex]) {
+        if (static_cast<size_t>(blockIndex) < validBlocks.size() && validBlocks[blockIndex]) {
             return blockIndex;
         }
         
         // Fallback: return first valid block
-        for (int i = 0; i < validBlocks.size(); ++i) {
+        for (size_t i = 0; i < validBlocks.size(); ++i) {
             if (validBlocks[i]) return i;
         }
         return 0;
@@ -353,7 +348,7 @@ public:
     std::string_view getName() const override { return "PLRU"; }
     
 private:
-    void updateTreeBits(int blockIndex, bool accessed) {
+    void updateTreeBits(int blockIndex, bool /* accessed */) {
         // Update tree bits to point away from accessed block
         int node = blockIndex + (numBlocks_ - 1);
         

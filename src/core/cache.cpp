@@ -6,8 +6,12 @@
 #include <string>
 #include <numeric>
 #include <sstream>
+#include <atomic>
 
 namespace cachesim {
+
+// Global access counter for timestamps
+static std::atomic<uint64_t> globalAccessCounter{0};
 
     Cache::Cache(const CacheConfig& config)
     : size(config.size),
@@ -36,7 +40,10 @@ namespace cachesim {
     
     // Initialize cache sets
     sets.resize(numSets);
-    for (auto& set : sets) {
+    replacementPolicies.resize(numSets);
+    
+    for (int setIdx = 0; setIdx < numSets; ++setIdx) {
+        auto& set = sets[setIdx];
         set.blocks.resize(associativity);
         set.lruOrder.resize(associativity);
         set.fifoOrder.resize(associativity);
@@ -45,6 +52,9 @@ namespace cachesim {
         std::iota(set.lruOrder.begin(), set.lruOrder.end(), 0);
         std::iota(set.fifoOrder.begin(), set.fifoOrder.end(), 0);
         set.nextFifoIndex = 0;
+        
+        // Create replacement policy for this set
+        replacementPolicies[setIdx] = ReplacementPolicyFactory::create(replacementPolicy, associativity);
     }
 }
 
@@ -73,6 +83,10 @@ bool Cache::access(uint32_t address, bool isWrite,
         // Handle the hit based on the access type
         auto& block = set.blocks[*blockIndex];
         
+        // Update block access statistics (v1.2.0)
+        block.accessCount++;
+        block.lastAccess = globalAccessCounter.fetch_add(1);
+        
         if (isWrite) {
             if (writePolicy == WritePolicy::WriteThrough) {
                 // Write-through: write to both cache and next level
@@ -87,7 +101,7 @@ bool Cache::access(uint32_t address, bool isWrite,
         }
         
         // Update replacement policy state
-        updateReplacementPolicy(set, *blockIndex);
+        replacementPolicies[setIndex]->onAccess(*blockIndex);
         
         return true;
     } else {
@@ -115,7 +129,7 @@ bool Cache::access(uint32_t address, bool isWrite,
         }
         
         // Select victim block to replace
-        int victimIndex = findVictim(set);
+        int victimIndex = findVictim(set, setIndex);
         auto& victimBlock = set.blocks[victimIndex];
         
         // Handle writeback if the victim is dirty
@@ -125,10 +139,10 @@ bool Cache::access(uint32_t address, bool isWrite,
         }
         
         // Install the new block
-        installBlock(address, setIndex, victimIndex, isWrite, nextLevel.value_or(nullptr));
+        installBlock(address, setIndex, victimIndex, isWrite, nextLevel.value_or(nullptr), false);
         
-        // Update replacement policy order
-        updateReplacementPolicy(set, victimIndex);
+        // Update replacement policy for installed block
+        replacementPolicies[setIndex]->onInstall(victimIndex);
         
         // Handle prefetching if enabled
         if (prefetchEnabled && stridePredictor) {
@@ -146,71 +160,20 @@ std::pair<uint32_t, int> Cache::getTagAndSet(uint32_t address) const {
     return {tag, setIndex};
 }
 
-// Update LRU ordering in a set
-void Cache::updateLRU(CacheSet& set, int accessedIndex) {
-    // Move the accessed block to the front of the LRU order (most recently used)
-    auto it = std::find(set.lruOrder.begin(), set.lruOrder.end(), accessedIndex);
-    assert(it != set.lruOrder.end() && "Block index not found in LRU order");
-    
-    // Use C++17 splicing to efficiently move the element
-    set.lruOrder.erase(it);
-    set.lruOrder.insert(set.lruOrder.begin(), accessedIndex);
-}
-
 // Find a victim block for replacement
-int Cache::findVictim(const CacheSet& set) const {
-    switch (replacementPolicy) {
-        case ReplacementPolicy::LRU:
-            return findVictimLRU(set);
-        case ReplacementPolicy::FIFO:
-            return findVictimFIFO(set);
-        case ReplacementPolicy::Random:
-            return findVictimRandom(set);
-        default:
-            return findVictimLRU(set); // Default to LRU
-    }
-}
-
-// Find victim using LRU policy
-int Cache::findVictimLRU(const CacheSet& set) const {
-    return set.lruOrder.back();
-}
-
-// Find victim using FIFO policy
-int Cache::findVictimFIFO(const CacheSet& set) const {
-    // Find the first valid block in FIFO order
-    for (int idx : set.fifoOrder) {
-        if (set.blocks[idx].valid) {
-            return idx;
-        }
-    }
-    // If no valid blocks, return the first slot
-    return 0;
-}
-
-// Find victim using Random policy
-int Cache::findVictimRandom(const CacheSet& set) const {
-    // Find all valid blocks
-    std::vector<int> validIndices;
+int Cache::findVictim(const CacheSet& set, int setIndex) const {
+    // Create valid blocks vector
+    std::vector<bool> validBlocks(associativity);
     for (int i = 0; i < associativity; ++i) {
-        if (set.blocks[i].valid) {
-            validIndices.push_back(i);
-        }
+        validBlocks[i] = set.blocks[i].valid;
     }
     
-    if (validIndices.empty()) {
-        // No valid blocks, return random index
-        std::uniform_int_distribution<int> dist(0, associativity - 1);
-        return dist(rng);
-    } else {
-        // Return random valid block
-        std::uniform_int_distribution<int> dist(0, validIndices.size() - 1);
-        return validIndices[dist(rng)];
-    }
+    // Use replacement policy to select victim
+    return replacementPolicies[setIndex]->selectVictim(validBlocks);
 }
 
 // Install a new block in the cache
-void Cache::installBlock(uint32_t address, int setIndex, int blockIndex, bool isWrite, Cache* nextLevel) {
+void Cache::installBlock(uint32_t address, int setIndex, int blockIndex, bool isWrite, Cache* nextLevel, bool isPrefetch) {
     auto [tag, _] = getTagAndSet(address);
     auto& block = sets[setIndex].blocks[blockIndex];
     
@@ -223,6 +186,11 @@ void Cache::installBlock(uint32_t address, int setIndex, int blockIndex, bool is
     block.valid = true;
     block.dirty = isWrite;
     block.tag = tag;
+    
+    // Initialize access statistics (v1.2.0)
+    block.accessCount = 1;
+    block.lastAccess = globalAccessCounter.fetch_add(1);
+    block.prefetched = isPrefetch;
     
     // Set MESI state based on access type
     if (isWrite) {
@@ -243,6 +211,15 @@ void Cache::writeBack(uint32_t address, Cache* nextLevel) {
         static_cast<void>(nextLevel->access(address, true, std::nullopt));
     }
     // In a real system, would eventually write to main memory
+}
+
+// Handle write-through (v1.1.0)
+void Cache::writeThrough(uint32_t address, Cache* nextLevel) {
+    writeThroughs++;
+    
+    if (nextLevel) {
+        static_cast<void>(nextLevel->access(address, true, std::nullopt));
+    }
 }
 
 // Find a block in the cache and classify hits/misses
@@ -297,9 +274,27 @@ void Cache::handlePrefetch(uint32_t address, bool isWrite, Cache* nextLevel, Str
                           << std::hex << prefetchAddress << std::dec << std::endl;
             }
             
-            // Access the prefetch address in the next level to bring it closer
-            if (nextLevel) {
-                static_cast<void>(nextLevel->access(prefetchAddress, false, std::nullopt, stridePredictor));
+            // Check if the prefetch address is already in the cache
+            auto [tag, setIndex] = getTagAndSet(prefetchAddress);
+            auto result = findBlock(prefetchAddress);
+            
+            if (!std::holds_alternative<int>(result)) {
+                // Block not in cache, install it as a prefetch
+                auto& set = sets[setIndex];
+                int victimIndex = findVictim(set, setIndex);
+                auto& victimBlock = set.blocks[victimIndex];
+                
+                // Handle writeback if the victim is dirty
+                if (victimBlock.valid && victimBlock.requiresWriteback()) {
+                    uint32_t victimAddress = (victimBlock.tag * numSets + setIndex) * blockSize;
+                    writeBack(victimAddress, nextLevel);
+                }
+                
+                // Install the prefetched block
+                installBlock(prefetchAddress, setIndex, victimIndex, false, nextLevel, true);
+                
+                // Update replacement policy
+                replacementPolicies[setIndex]->onInstall(victimIndex);
             }
             
             // Update stream buffer with the prefetched address
@@ -356,6 +351,8 @@ void Cache::printStats() const {
     std::cout << "  Associativity: " << associativity << "-way" << std::endl;
     std::cout << "  Block Size: " << blockSize << " bytes" << std::endl;
     std::cout << "  Number of Sets: " << numSets << std::endl;
+    std::cout << "  Replacement Policy: " << replacementPolicyToString(replacementPolicy) << std::endl;
+    std::cout << "  Write Policy: " << (writePolicy == WritePolicy::WriteBack ? "Write-back" : "Write-through") << std::endl;
     std::cout << "  Prefetching: " << (prefetchEnabled ? "Enabled" : "Disabled") << std::endl;
     
     if (prefetchEnabled) {
@@ -370,6 +367,9 @@ void Cache::printStats() const {
     std::cout << "  Reads: " << reads << std::endl;
     std::cout << "  Writes: " << writes << std::endl;
     std::cout << "  Write-backs: " << writeBacks << std::endl;
+    if (writePolicy == WritePolicy::WriteThrough) {
+        std::cout << "  Write-throughs: " << writeThroughs << std::endl;
+    }
     std::cout << "  Hit Ratio: " << std::fixed << std::setprecision(2) 
               << (100.0 * hits / (hits + misses)) << "%" << std::endl;
     
@@ -395,10 +395,14 @@ void Cache::resetStats() {
     reads = 0;
     writes = 0;
     writeBacks = 0;
+    writeThroughs = 0;
     std::fill(missTypeStats.begin(), missTypeStats.end(), 0);
     
     // Reset stream buffer stats
     streamBuffer.resetStats();
+    
+    // Reset MESI protocol stats
+    mesiProtocol.resetStats();
 }
 
 // Export cache state for debugging (v1.1.0)
@@ -410,7 +414,9 @@ std::string Cache::exportCacheState() const {
     oss << "  Size: " << size << " bytes\n";
     oss << "  Associativity: " << associativity << "-way\n";
     oss << "  Block Size: " << blockSize << " bytes\n";
-    oss << "  Number of Sets: " << numSets << "\n\n";
+    oss << "  Number of Sets: " << numSets << "\n";
+    oss << "  Replacement Policy: " << replacementPolicyToString(replacementPolicy) << "\n";
+    oss << "  Write Policy: " << (writePolicy == WritePolicy::WriteBack ? "Write-back" : "Write-through") << "\n\n";
     
     oss << "Cache Contents:\n";
     for (int setIdx = 0; setIdx < numSets; ++setIdx) {
@@ -433,7 +439,7 @@ std::string Cache::exportCacheState() const {
                     oss << "  Way " << way << ": ";
                     oss << "Tag=0x" << std::hex << block.tag << std::dec;
                     oss << ", State=" << (block.dirty ? "Dirty" : "Clean");
-                    oss << ", MESI=" << static_cast<int>(block.mesiState);
+                    oss << ", MESI=" << mesiProtocol.stateToString(block.mesiState);
                     oss << "\n";
                 }
             }
@@ -459,6 +465,7 @@ void Cache::warmup(const std::vector<uint32_t>& addresses) {
     int savedReads = reads;
     int savedWrites = writes;
     int savedWriteBacks = writeBacks;
+    int savedWriteThroughs = writeThroughs;
     auto savedMissTypeStats = missTypeStats;
     
     // Perform warmup accesses
@@ -472,7 +479,66 @@ void Cache::warmup(const std::vector<uint32_t>& addresses) {
     reads = savedReads;
     writes = savedWrites;
     writeBacks = savedWriteBacks;
+    writeThroughs = savedWriteThroughs;
     missTypeStats = savedMissTypeStats;
+}
+
+// Block state access methods for visualization (v1.2.0)
+bool Cache::isBlockValid(uint32_t setIndex, uint32_t wayIndex) const {
+    if (setIndex >= static_cast<uint32_t>(numSets) || wayIndex >= static_cast<uint32_t>(associativity)) {
+        return false;
+    }
+    return sets[setIndex].blocks[wayIndex].valid;
+}
+
+bool Cache::isBlockDirty(uint32_t setIndex, uint32_t wayIndex) const {
+    if (setIndex >= static_cast<uint32_t>(numSets) || wayIndex >= static_cast<uint32_t>(associativity)) {
+        return false;
+    }
+    return sets[setIndex].blocks[wayIndex].dirty;
+}
+
+uint32_t Cache::getBlockTag(uint32_t setIndex, uint32_t wayIndex) const {
+    if (setIndex >= static_cast<uint32_t>(numSets) || wayIndex >= static_cast<uint32_t>(associativity)) {
+        return 0;
+    }
+    return sets[setIndex].blocks[wayIndex].tag;
+}
+
+uint32_t Cache::getBlockAccessCount(uint32_t setIndex, uint32_t wayIndex) const {
+    if (setIndex >= static_cast<uint32_t>(numSets) || wayIndex >= static_cast<uint32_t>(associativity)) {
+        return 0;
+    }
+    return sets[setIndex].blocks[wayIndex].accessCount;
+}
+
+uint64_t Cache::getBlockLastAccess(uint32_t setIndex, uint32_t wayIndex) const {
+    if (setIndex >= static_cast<uint32_t>(numSets) || wayIndex >= static_cast<uint32_t>(associativity)) {
+        return 0;
+    }
+    return sets[setIndex].blocks[wayIndex].lastAccess;
+}
+
+bool Cache::isBlockPrefetched(uint32_t setIndex, uint32_t wayIndex) const {
+    if (setIndex >= static_cast<uint32_t>(numSets) || wayIndex >= static_cast<uint32_t>(associativity)) {
+        return false;
+    }
+    return sets[setIndex].blocks[wayIndex].prefetched;
+}
+
+MESIState Cache::getBlockState(uint32_t address) const {
+    auto [tag, setIndex] = getTagAndSet(address);
+    const auto& set = sets[setIndex];
+    
+    // Find the block in the set
+    for (int i = 0; i < associativity; ++i) {
+        const auto& block = set.blocks[i];
+        if (block.valid && block.tag == tag) {
+            return block.mesiState;
+        }
+    }
+    
+    return MESIState::Invalid;
 }
 
 } // namespace cachesim

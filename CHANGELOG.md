@@ -5,7 +5,7 @@ All notable changes to the Cache Simulator project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2025-05-29
+## [1.2.0] - 2025-07-19
 
 ### Added
 - **NRU (Not Recently Used) Replacement Policy**: Complete implementation with reference bit tracking
@@ -16,23 +16,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Statistical Charting**: ASCII line charts, pie charts, and scatter plots for data visualization
 - **Enhanced Write Policy Framework**: Pluggable system supporting multiple allocation strategies
 - **Parallel Benchmarking**: Compare multiple configurations simultaneously
+- **Multi-processor Simulation**: Complete multi-core processor simulation with cache coherence
+  - Processor core model with private L1 caches
+  - Directory-based coherence controller implementing MESI protocol
+  - Multiple interconnect topologies (Bus, Crossbar, Mesh)
+  - Support for atomic operations and memory barriers
+  - Comprehensive multi-processor statistics
+- **Victim Cache Tests**: Complete unit test suite for victim cache functionality
+- **Enhanced Documentation**: 
+  - Comprehensive victim cache documentation
+  - Complete tutorial covering all features
+  - Usage examples and best practices
+- **Comprehensive Utility Scripts**: 
+  - Advanced build script with multiple configuration options
+  - Comprehensive benchmark runner with parallel execution
+  - Simulation runner with colorized output and CSV export
+  - Trace validation script with error detection and fixing
+  - Release creation script with cross-platform support
+- **Enhanced Tool Suite**:
+  - Advanced trace generator with multiple access patterns
+  - Cache analyzer with optimization recommendations
+  - Performance comparison tool with parallel benchmarking
+  - Comprehensive documentation for all tools
 
 ### Changed
 - Refactored write policy system to use inheritance-based design
-- Updated version to 1.2.0 across all files
+- Reorganized project structure for better maintainability
 - Enhanced visualization with new chart types
 - Improved command-line interface with new options
+- Fixed all compiler warnings and improved code quality
+- Added support for cache state visualization in main simulation
+- Standardized directory structure and naming conventions
+- Removed all version-specific naming from files and directories
+- Enhanced utility scripts with comprehensive features and error handling
 
 ### Performance
 - Up to 4x speedup on multi-core systems with parallel processing
 - Reduced conflict misses by up to 25% with victim cache
 - Improved write performance with combining buffer
+- Scalable multi-processor simulation supporting up to 64 cores
 
 ### Technical Details
 - Thread pool implementation using C++17 features
-- Victim cache with LRU replacement and full statistics
+- Victim cache with FIFO replacement and full statistics
 - Write policies now support both update and allocation strategies
 - Added M_PI definition for cross-platform compatibility in visualizations
+- Complete MESI coherence protocol implementation
+- Thread-safe directory-based coherence tracking
+- Extensible interconnect framework with multiple topologies
+
+### Fixed
+- Fixed unused variable warnings in test files
+- Fixed nodiscard attribute warnings
+- Fixed type conversion issues between uint32_t and uint64_t
+- Fixed lambda capture warnings in victim_cache.h
+- Improved const-correctness throughout the codebase
 
 ## [1.1.0] - 2025-05-27
 

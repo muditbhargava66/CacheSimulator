@@ -1,0 +1,61 @@
+# Producer-Consumer Trace for Multi-Processor Testing
+# Demonstrates cache coherence with MESI protocol
+# Format: <op> <address> [processor_id]
+# Note: processor_id is optional, defaults to 0
+
+# Producer (Processor 0) initializes data
+w 0x1000
+w 0x1008
+w 0x1010
+w 0x1018
+w 0x1020
+
+# Consumer (Processor 1) reads data - causes coherence traffic
+r 0x1000
+r 0x1008
+r 0x1010
+r 0x1018
+r 0x1020
+
+# Producer updates data (causes invalidation)
+w 0x1000
+w 0x1008
+
+# Another consumer (Processor 2) reads - shared state
+r 0x1010
+r 0x1018
+r 0x1020
+
+# Consumer 1 reads updated data
+r 0x1000
+r 0x1008
+
+# Lock variable simulation (high contention)
+# Multiple processors competing for lock
+r 0x2000  # P0 checks lock
+w 0x2000  # P0 acquires lock (exclusive)
+r 0x2000  # P1 checks lock (causes downgrade to shared)
+r 0x2000  # P2 checks lock
+w 0x2000  # P1 tries to acquire (invalidates others)
+r 0x2000  # P0 checks again
+w 0x2000  # P2 acquires
+
+# Critical section data access
+w 0x3000
+w 0x3008
+w 0x3010
+r 0x3000
+r 0x3008
+r 0x3010
+
+# Release lock
+w 0x2000
+
+# False sharing scenario
+# Different processors accessing different parts of same cache line
+w 0x4000  # P0 writes first half
+w 0x4020  # P1 writes second half (same 64-byte line)
+r 0x4000  # P0 reads its data (invalidated by P1)
+r 0x4020  # P1 reads its data (invalidated by P0)
+
+# Demonstrates need for padding to avoid false sharing

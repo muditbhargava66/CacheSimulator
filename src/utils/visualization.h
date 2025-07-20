@@ -13,6 +13,7 @@
 #include <array>
 #include <sstream>
 #include <iomanip>
+#include "../core/mesi_protocol.h"
 
 // Define M_PI if not defined (for cross-platform compatibility)
 #ifndef M_PI
@@ -146,7 +147,7 @@ public:
     [[nodiscard]] static std::string generateHeatmap(const std::vector<std::vector<double>>& data, 
                                                   const std::vector<std::string>& rowLabels = {},
                                                   const std::vector<std::string>& colLabels = {},
-                                                  bool useColors = true) {
+                                                  [[maybe_unused]] bool useColors = true) {
         if (data.empty() || data[0].empty()) {
             return "No data to visualize.";
         }
@@ -647,7 +648,7 @@ public:
     [[nodiscard]] static std::string generatePieChart(
         const std::vector<std::pair<std::string, double>>& data,
         int radius = 10,
-        bool useColors = true) {
+        [[maybe_unused]] bool useColors = true) {
         
         if (data.empty()) {
             return "No data to visualize.";
@@ -740,7 +741,7 @@ public:
         const std::vector<std::pair<double, double>>& data,
         int width = 80, int height = 20,
         const std::string& title = "",
-        bool useColors = true) {
+        [[maybe_unused]] bool useColors = true) {
         
         if (data.empty()) {
             return "No data to visualize.";

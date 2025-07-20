@@ -1,0 +1,66 @@
+# Matrix Multiplication Trace
+# This trace simulates a matrix multiplication access pattern
+# Demonstrates spatial and temporal locality for cache optimization
+
+# Matrix A access (row-major)
+r 0x10000
+r 0x10008
+r 0x10010
+r 0x10018
+r 0x10020
+r 0x10028
+r 0x10030
+r 0x10038
+
+# Matrix B access (column-major, shows stride pattern)
+r 0x20000
+r 0x20100
+r 0x20200
+r 0x20300
+r 0x20400
+r 0x20500
+r 0x20600
+r 0x20700
+
+# Result matrix C (read-modify-write)
+r 0x30000
+w 0x30000
+r 0x30008
+w 0x30008
+r 0x30010
+w 0x30010
+r 0x30018
+w 0x30018
+
+# Second iteration - reuse of Matrix A
+r 0x10000
+r 0x10008
+r 0x10010
+r 0x10018
+r 0x10020
+r 0x10028
+r 0x10030
+r 0x10038
+
+# Matrix B next column
+r 0x20008
+r 0x20108
+r 0x20208
+r 0x20308
+r 0x20408
+r 0x20508
+r 0x20608
+r 0x20708
+
+# Result matrix C next element
+r 0x30020
+w 0x30020
+r 0x30028
+w 0x30028
+
+# Pattern continues...
+# This demonstrates:
+# 1. Sequential access in Matrix A (good for stream buffer)
+# 2. Strided access in Matrix B (good for stride predictor)
+# 3. Read-modify-write in Matrix C (tests write policies)
+# 4. Temporal reuse of Matrix A rows (benefits from larger cache or victim cache)

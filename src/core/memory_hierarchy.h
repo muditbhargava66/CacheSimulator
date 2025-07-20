@@ -68,6 +68,13 @@ public:
     [[nodiscard]] double getL1MissRate() const;
     [[nodiscard]] double getPrefetchAccuracy() const;
     [[nodiscard]] std::string getPrefetchStats() const;
+    
+    // Cache access methods for visualization (v1.2.0)
+    [[nodiscard]] std::optional<Cache*> getL1Cache() { return &l1; }
+    [[nodiscard]] std::optional<Cache*> getL2Cache() { return l2.has_value() ? &l2.value() : std::optional<Cache*>{}; }
+    [[nodiscard]] double getL1HitRate() const { return 1.0 - getL1MissRate(); }
+    [[nodiscard]] double getL2HitRate() const;
+    [[nodiscard]] double getL2MissRate() const;
 
 private:
     // Cache instances

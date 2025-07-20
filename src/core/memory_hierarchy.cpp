@@ -290,4 +290,18 @@ void MemoryHierarchy::compareWith(const MemoryHierarchy& other) const {
     }
 }
 
+double MemoryHierarchy::getL2HitRate() const {
+    if (!l2) {
+        return 0.0;
+    }
+    return l2->getHitRatio();
+}
+
+double MemoryHierarchy::getL2MissRate() const {
+    if (!l2) {
+        return 0.0;
+    }
+    return l2->getMissRatio();
+}
+
 } // namespace cachesim

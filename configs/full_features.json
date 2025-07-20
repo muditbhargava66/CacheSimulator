@@ -1,0 +1,97 @@
+{
+  "name": "v1.2.0 Full Features Configuration",
+  "version": "1.2.0",
+  "description": "Configuration showcasing all v1.2.0 features",
+  
+  "cache_hierarchy": {
+    "l1": {
+      "size": 32768,
+      "associativity": 4,
+      "block_size": 64,
+      "replacement_policy": "NRU",
+      "write_policy": {
+        "update": "write_back",
+        "allocation": "write_allocate"
+      },
+      "prefetch": {
+        "enabled": true,
+        "distance": 4,
+        "degree": 2
+      }
+    },
+    
+    "l2": {
+      "size": 262144,
+      "associativity": 8,
+      "block_size": 64,
+      "replacement_policy": "PLRU",
+      "write_policy": {
+        "update": "write_back",
+        "allocation": "write_allocate"
+      },
+      "prefetch": {
+        "enabled": true,
+        "distance": 8,
+        "degree": 4
+      }
+    },
+    
+    "victim_cache": {
+      "enabled": true,
+      "size": 8,
+      "for_level": "L1"
+    },
+    
+    "write_combining_buffer": {
+      "enabled": true,
+      "entries": 8
+    }
+  },
+  
+  "prefetching": {
+    "stride_prediction": {
+      "enabled": true,
+      "table_size": 1024,
+      "confidence_threshold": 3
+    },
+    "adaptive_prefetching": {
+      "enabled": true,
+      "initial_strategy": "stride",
+      "adaptation_interval": 10000
+    }
+  },
+  
+  "multiprocessor": {
+    "enabled": true,
+    "num_processors": 4,
+    "coherence_protocol": "MESI",
+    "interconnect": {
+      "type": "bus",
+      "latency": 10,
+      "bandwidth": 1000
+    },
+    "directory": {
+      "type": "centralized",
+      "latency": 5
+    }
+  },
+  
+  "simulation": {
+    "parallel_execution": true,
+    "num_threads": 0,
+    "chunk_size": 10000,
+    "warmup_period": 1000,
+    "statistics_interval": 100000
+  },
+  
+  "output": {
+    "verbose": false,
+    "visualizations": {
+      "cache_state": true,
+      "access_pattern": true,
+      "hit_rate_evolution": true,
+      "charts": ["histogram", "line", "pie"]
+    },
+    "export_format": "csv"
+  }
+}

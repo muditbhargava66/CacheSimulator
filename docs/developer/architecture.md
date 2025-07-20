@@ -43,25 +43,25 @@ This document describes the design of the Cache Simulator, including its archite
 The Cache Simulator employs a modular, layered architecture that separates core cache functionality from utilities and user interface components:
 
 ```
-┌─────────────────────────────────────────────────┐
+┌──────────────────────────────────────────────────┐
 │                   Applications                   │
 │ (Main Program, Tests, Trace Generator, Scripts)  │
-└───────────────────────┬─────────────────────────┘
+└───────────────────────┬──────────────────────────┘
                         │
-┌───────────────────────▼─────────────────────────┐
+┌───────────────────────▼──────────────────────────┐
 │               Memory Hierarchy API               │
 │     (MemoryHierarchy, Configuration, Stats)      │
-└───────────────────────┬─────────────────────────┘
+└───────────────────────┬──────────────────────────┘
                         │
-┌───────────────────────▼─────────────────────────┐
+┌───────────────────────▼──────────────────────────┐
 │                Core Components                   │
 │  (Cache, StreamBuffer, Prefetchers, MESI, etc.)  │
-└───────────────────────┬─────────────────────────┘
+└───────────────────────┬──────────────────────────┘
                         │
-┌───────────────────────▼─────────────────────────┐
+┌───────────────────────▼──────────────────────────┐
 │             Utility Components                   │
 │   (Trace Parsing, Logging, Visualization, etc.)  │
-└─────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────┘
 ```
 
 The design follows several key architectural principles:
