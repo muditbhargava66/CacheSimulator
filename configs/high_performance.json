@@ -1,0 +1,55 @@
+{
+  "name": "v1.2.0 High Performance Configuration",
+  "description": "Showcases all v1.2.0 features for maximum performance",
+  "version": "1.2.0",
+  
+  "l1": {
+    "size": 32768,
+    "associativity": 8,
+    "blockSize": 64,
+    "replacementPolicy": "NRU",
+    "writePolicy": "WriteBack",
+    "prefetch": {
+      "enabled": true,
+      "distance": 4,
+      "adaptive": true
+    }
+  },
+  
+  "l2": {
+    "size": 262144,
+    "associativity": 16,
+    "blockSize": 64,
+    "replacementPolicy": "PLRU",
+    "writePolicy": "WriteBack",
+    "prefetch": {
+      "enabled": true,
+      "distance": 8
+    }
+  },
+  
+  "victimCache": {
+    "enabled": true,
+    "size": 8,
+    "replacementPolicy": "FIFO"
+  },
+  
+  "writeCombining": {
+    "enabled": true,
+    "bufferSize": 8,
+    "coalescing": true
+  },
+  
+  "prefetching": {
+    "useStridePrediction": true,
+    "useAdaptivePrefetching": true,
+    "strideTableSize": 1024,
+    "confidenceThreshold": 0.8
+  },
+  
+  "parallelization": {
+    "enabled": true,
+    "threads": 0,
+    "chunkSize": 10000
+  }
+}

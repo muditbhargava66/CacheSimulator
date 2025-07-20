@@ -65,7 +65,7 @@ tmp/
 # Simulation results
 results/
 *.csv
-*.json
+# *.json
 
 # Generated traces
 traces/generated/
@@ -83,6 +83,14 @@ config.local.json
 *.orig
 
 # Core dumps
-core
-core.*
+# core
+# core.*
 .cache/
+
+# Test artifacts
+test_*.txt
+test_*.trace
+*_test_trace.txt
+perf_test_trace.txt
+
+TODO.md

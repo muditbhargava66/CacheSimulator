@@ -1,251 +1,258 @@
 #!/bin/bash
-
-# Cache Simulator Simulation Script
-# Runs multiple cache configurations against trace files and compares results
-
-# Colors for better readability
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
-
-# Check if colors are supported
-if [[ -t 1 ]] && [[ $(tput colors) -ge 8 ]]; then
-    USE_COLOR=true
-else
-    USE_COLOR=false
-fi
-
-print_colored() {
-    local color=$1
-    local msg=$2
-    
-    if $USE_COLOR; then
-        echo -e "${color}${msg}${NC}"
-    else
-        echo "$msg"
-    fi
-}
-
-print_header() {
-    local msg=$1
-    print_colored "$BLUE" "============================================="
-    print_colored "$BLUE" "$msg"
-    print_colored "$BLUE" "============================================="
-}
-
-print_subheader() {
-    local msg=$1
-    print_colored "$CYAN" "---------------------------------------------"
-    print_colored "$CYAN" "$msg"
-    print_colored "$CYAN" "---------------------------------------------"
-}
-
-print_result() {
-    local name=$1
-    local value=$2
-    printf "%-25s: %s\n" "$name" "$value"
-}
+# Comprehensive simulation script for Cache Simulator
+# Runs multiple configurations against trace files and compares results
 
 # Default values
 SIMULATOR="./build/bin/cachesim"
 TRACES_DIR="./traces"
-RESULTS_DIR="./results"
-CONFIGS_FILE="./configs.json"
+CONFIGS_DIR="./configs"
+RESULTS_DIR="./simulation_results"
+PARALLEL_JOBS=4
+VERBOSE=false
+GENERATE_CHARTS=false
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_status() {
+    local color=$1
+    local message=$2
+    echo -e "${color}${message}${NC}"
+}
+
+# Function to show usage
+show_usage() {
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  --simulator PATH    Path to cachesim executable (default: $SIMULATOR)"
+    echo "  --traces PATH       Path to traces directory (default: $TRACES_DIR)"
+    echo "  --configs PATH      Path to configs directory (default: $CONFIGS_DIR)"
+    echo "  --results PATH      Path to results directory (default: $RESULTS_DIR)"
+    echo "  --jobs N            Number of parallel jobs (default: $PARALLEL_JOBS)"
+    echo "  --verbose           Enable verbose output"
+    echo "  --charts            Generate performance charts (requires gnuplot)"
+    echo "  --help              Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0                                    # Run with defaults"
+    echo "  $0 --verbose --charts                 # Verbose with charts"
+    echo "  $0 --jobs=8 --results=./my_results   # Custom jobs and output"
+}
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
-    case $1 in
-        --simulator)
-            SIMULATOR="$2"
-            shift 2
+    key="$1"
+    case $key in
+        --simulator=*)
+            SIMULATOR="${key#*=}"
+            shift
             ;;
-        --traces)
-            TRACES_DIR="$2"
-            shift 2
+        --traces=*)
+            TRACES_DIR="${key#*=}"
+            shift
             ;;
-        --results)
-            RESULTS_DIR="$2"
-            shift 2
+        --configs=*)
+            CONFIGS_DIR="${key#*=}"
+            shift
             ;;
-        --configs)
-            CONFIGS_FILE="$2"
-            shift 2
+        --results=*)
+            RESULTS_DIR="${key#*=}"
+            shift
+            ;;
+        --jobs=*)
+            PARALLEL_JOBS="${key#*=}"
+            shift
+            ;;
+        --verbose)
+            VERBOSE=true
+            shift
+            ;;
+        --charts)
+            GENERATE_CHARTS=true
+            shift
             ;;
         --help)
-            echo "Usage: $0 [options]"
-            echo "Options:"
-            echo "  --simulator PATH  Path to the cache simulator executable (default: ./build/bin/cachesim)"
-            echo "  --traces DIR      Directory containing trace files (default: ./traces)"
-            echo "  --results DIR     Directory to store results (default: ./results)"
-            echo "  --configs FILE    JSON configuration file (default: ./configs.json)"
-            echo "  --help            Display this help message"
+            show_usage
             exit 0
             ;;
         *)
-            echo "Unknown option: $1"
-            echo "Use --help for usage information"
+            echo "Unknown option: $key"
+            show_usage
             exit 1
             ;;
     esac
 done
 
-# Check if simulator exists
-if [ ! -f "$SIMULATOR" ]; then
-    print_colored "$RED" "Error: Simulator executable not found at $SIMULATOR"
-    exit 1
-fi
-
-# Check if traces directory exists
-if [ ! -d "$TRACES_DIR" ]; then
-    print_colored "$RED" "Error: Traces directory not found at $TRACES_DIR"
-    exit 1
-fi
-
-# Create results directory if it doesn't exist
-mkdir -p "$RESULTS_DIR"
-
-# Define a set of cache configurations to test
-# Format: "name,blocksize,l1_size,l1_assoc,l2_size,l2_assoc,prefetch,prefetch_dist"
-CONFIGURATIONS=(
-    "baseline,64,32768,4,262144,8,0,0"
-    "no_l2,64,32768,4,0,0,0,0"
-    "direct_mapped,64,32768,1,262144,4,0,0"
-    "larger_l1,64,65536,4,262144,8,0,0"
-    "with_prefetch,64,32768,4,262144,8,1,4"
-    "adaptive_prefetch,64,32768,4,262144,8,1,8"
-    "large_blocks,128,32768,4,262144,8,0,0"
-    "fully_featured,64,65536,4,524288,8,1,16"
-)
-
-# Find all trace files
-TRACE_FILES=$(find "$TRACES_DIR" -name "*.txt" | sort)
-
-if [ -z "$TRACE_FILES" ]; then
-    print_colored "$RED" "Error: No trace files found in $TRACES_DIR"
-    exit 1
-fi
-
-# Print simulation setup
-print_header "Cache Simulator Benchmark"
-echo "Simulator: $SIMULATOR"
-echo "Traces directory: $TRACES_DIR"
-echo "Results directory: $RESULTS_DIR"
-echo "Number of configurations: ${#CONFIGURATIONS[@]}"
-echo "Number of trace files: $(echo "$TRACE_FILES" | wc -l)"
+print_status $BLUE "Cache Simulator - Comprehensive Simulation Suite"
+print_status $BLUE "==============================================="
 echo ""
 
-# Create CSV header
-CSV_FILE="$RESULTS_DIR/benchmark_results.csv"
-echo "Trace,Configuration,BlockSize,L1Size,L1Assoc,L2Size,L2Assoc,Prefetch,PrefetchDist,Hits,Misses,Reads,Writes,MissRate,Time" > "$CSV_FILE"
+# Validate inputs
+if [ ! -f "$SIMULATOR" ]; then
+    print_status $RED "Error: Simulator not found at $SIMULATOR"
+    print_status $YELLOW "Please build the project first: ./scripts/build_all.sh"
+    exit 1
+fi
 
-# Run simulations for each trace file and configuration
-for TRACE in $TRACE_FILES; do
-    TRACE_NAME=$(basename "$TRACE")
-    print_header "Processing trace: $TRACE_NAME"
+if [ ! -d "$TRACES_DIR" ]; then
+    print_status $RED "Error: Traces directory not found at $TRACES_DIR"
+    exit 1
+fi
+
+if [ ! -d "$CONFIGS_DIR" ]; then
+    print_status $RED "Error: Configs directory not found at $CONFIGS_DIR"
+    exit 1
+fi
+
+# Create results directory
+mkdir -p "$RESULTS_DIR"
+
+print_status $GREEN "Configuration:"
+echo "  Simulator: $SIMULATOR"
+echo "  Traces: $TRACES_DIR"
+echo "  Configs: $CONFIGS_DIR"
+echo "  Results: $RESULTS_DIR"
+echo "  Parallel Jobs: $PARALLEL_JOBS"
+echo "  Verbose: $VERBOSE"
+echo "  Generate Charts: $GENERATE_CHARTS"
+echo ""
+
+# Function to run simulation
+run_simulation() {
+    local config_file=$1
+    local trace_file=$2
+    local config_name=$(basename "$config_file" .json)
+    local trace_name=$(basename "$trace_file" .txt)
+    local output_file="${RESULTS_DIR}/${config_name}_${trace_name}.txt"
+    local csv_file="${RESULTS_DIR}/${config_name}_${trace_name}.csv"
     
-    for CONFIG in "${CONFIGURATIONS[@]}"; do
-        # Parse configuration
-        IFS=',' read -r NAME BLOCKSIZE L1_SIZE L1_ASSOC L2_SIZE L2_ASSOC PREFETCH PREFETCH_DIST <<< "$CONFIG"
-        
-        print_subheader "Configuration: $NAME"
-        echo "  Block Size: $BLOCKSIZE bytes"
-        echo "  L1 Cache: $L1_SIZE bytes, $L1_ASSOC-way associative"
-        if [ "$L2_SIZE" -gt 0 ]; then
-            echo "  L2 Cache: $L2_SIZE bytes, $L2_ASSOC-way associative"
-        else
-            echo "  L2 Cache: Disabled"
-        fi
-        echo "  Prefetching: $([ "$PREFETCH" -eq 1 ] && echo "Enabled (distance=$PREFETCH_DIST)" || echo "Disabled")"
-        
-        # Create output file name
-        OUTPUT_FILE="$RESULTS_DIR/${TRACE_NAME%.txt}_${NAME}.txt"
-        
-        # Run simulation
-        echo "  Running simulation..."
-        START_TIME=$(date +%s.%N)
-        $SIMULATOR "$BLOCKSIZE" "$L1_SIZE" "$L1_ASSOC" "$L2_SIZE" "$L2_ASSOC" "$PREFETCH" "$PREFETCH_DIST" "$TRACE" > "$OUTPUT_FILE" 2>&1
-        END_TIME=$(date +%s.%N)
-        EXEC_TIME=$(echo "$END_TIME - $START_TIME" | bc)
-        
-        # Extract results - this will depend on your output format
-        # Adjust the grep and awk commands to match your output format
-        HITS=$(grep -E "L1 hits|Hits" "$OUTPUT_FILE" | awk '{print $NF}' | head -1)
-        MISSES=$(grep -E "L1 misses|Misses" "$OUTPUT_FILE" | awk '{print $NF}' | head -1)
-        READS=$(grep -E "L1 reads|Reads" "$OUTPUT_FILE" | awk '{print $NF}' | head -1)
-        WRITES=$(grep -E "L1 writes|Writes" "$OUTPUT_FILE" | awk '{print $NF}' | head -1)
-        
-        # Calculate miss rate
-        if [ -n "$HITS" ] && [ -n "$MISSES" ]; then
-            TOTAL=$(( HITS + MISSES ))
-            MISS_RATE=$(echo "scale=4; $MISSES / $TOTAL" | bc)
-        else
-            MISS_RATE="N/A"
-            print_colored "$YELLOW" "  Warning: Could not extract hit/miss counts from output"
-        fi
-        
-        # Print results
-        echo "  Results:"
-        print_result "Execution Time" "$(printf "%.3f" "$EXEC_TIME") seconds"
-        print_result "Hits" "${HITS:-N/A}"
-        print_result "Misses" "${MISSES:-N/A}"
-        print_result "Reads" "${READS:-N/A}"
-        print_result "Writes" "${WRITES:-N/A}"
-        print_result "Miss Rate" "$(printf "%.2f%%" "$(echo "$MISS_RATE * 100" | bc)")"
-        
-        # Append to CSV
-        echo "$TRACE_NAME,$NAME,$BLOCKSIZE,$L1_SIZE,$L1_ASSOC,$L2_SIZE,$L2_ASSOC,$PREFETCH,$PREFETCH_DIST,${HITS:-0},${MISSES:-0},${READS:-0},${WRITES:-0},$MISS_RATE,$EXEC_TIME" >> "$CSV_FILE"
-        
-        echo ""
+    if [ "$VERBOSE" = true ]; then
+        print_status $YELLOW "Running: $config_name with $trace_name"
+    fi
+    
+    # Run simulation
+    "$SIMULATOR" --config "$config_file" "$trace_file" > "$output_file" 2>&1
+    
+    # Extract key metrics to CSV
+    {
+        echo "Config,Trace,L1_Hit_Rate,L2_Hit_Rate,Total_Accesses,Processing_Time_ms"
+        local l1_hit=$(grep "L1 Hit Ratio" "$output_file" | awk '{print $NF}' | tr -d '%')
+        local l2_hit=$(grep "L2 Hit Ratio" "$output_file" | awk '{print $NF}' | tr -d '%')
+        local total_acc=$(grep "Total Accesses" "$output_file" | awk '{print $NF}')
+        local proc_time=$(grep "Processing Time" "$output_file" | awk '{print $3}')
+        echo "$config_name,$trace_name,$l1_hit,$l2_hit,$total_acc,$proc_time"
+    } > "$csv_file"
+    
+    if [ "$VERBOSE" = true ]; then
+        print_status $GREEN "  Completed: $config_name with $trace_name"
+    fi
+}
+
+# Export function for parallel execution
+export -f run_simulation
+export -f print_status
+export SIMULATOR RESULTS_DIR VERBOSE RED GREEN YELLOW BLUE NC
+
+print_status $BLUE "Starting simulations..."
+echo ""
+
+# Get list of config and trace files
+config_files=("$CONFIGS_DIR"/*.json)
+trace_files=("$TRACES_DIR"/*.txt)
+
+# Create job list
+job_list="${RESULTS_DIR}/job_list.txt"
+> "$job_list"
+
+for config_file in "${config_files[@]}"; do
+    for trace_file in "${trace_files[@]}"; do
+        echo "$config_file $trace_file" >> "$job_list"
     done
 done
 
-print_header "Benchmark Complete"
-echo "Results saved to $RESULTS_DIR"
-echo "CSV summary saved to $CSV_FILE"
+total_jobs=$(wc -l < "$job_list")
+print_status $YELLOW "Total simulations to run: $total_jobs"
+print_status $YELLOW "Using $PARALLEL_JOBS parallel jobs"
+echo ""
 
-# Generate simple analysis if gnuplot is available
-if command -v gnuplot &> /dev/null; then
-    print_subheader "Generating Performance Charts"
-    
-    # Create gnuplot script
-    GNUPLOT_SCRIPT="$RESULTS_DIR/plot_misses.gp"
-    echo "set terminal pngcairo enhanced font 'Arial,12' size 1200,800" > "$GNUPLOT_SCRIPT"
-    echo "set output '$RESULTS_DIR/miss_rates.png'" >> "$GNUPLOT_SCRIPT"
-    echo "set title 'Cache Miss Rates by Configuration and Trace'" >> "$GNUPLOT_SCRIPT"
-    echo "set style data histogram" >> "$GNUPLOT_SCRIPT"
-    echo "set style histogram cluster gap 1" >> "$GNUPLOT_SCRIPT"
-    echo "set style fill solid border -1" >> "$GNUPLOT_SCRIPT"
-    echo "set boxwidth 0.9" >> "$GNUPLOT_SCRIPT"
-    echo "set xtic rotate by -45 scale 0" >> "$GNUPLOT_SCRIPT"
-    echo "set ylabel 'Miss Rate (%)'" >> "$GNUPLOT_SCRIPT"
-    echo "set yrange [0:100]" >> "$GNUPLOT_SCRIPT"
-    echo "set datafile separator ','" >> "$GNUPLOT_SCRIPT"
-    echo "set key outside" >> "$GNUPLOT_SCRIPT"
-    
-    # Different colors for each configuration
-    echo "set palette defined (0 '#1f77b4', 1 '#ff7f0e', 2 '#2ca02c', 3 '#d62728', 4 '#9467bd', 5 '#8c564b', 6 '#e377c2', 7 '#7f7f7f')" >> "$GNUPLOT_SCRIPT"
-    
-    # Create the plot command
-    echo -n "plot " >> "$GNUPLOT_SCRIPT"
-    CONFIG_COUNT=${#CONFIGURATIONS[@]}
-    for ((i=0; i<CONFIG_COUNT; i++)); do
-        IFS=',' read -r NAME _ <<< "${CONFIGURATIONS[$i]}"
-        echo -n "'$CSV_FILE' using (\$13*100):xtic(1) every ::1 title '$NAME' lc palette frac ($i/$CONFIG_COUNT)" >> "$GNUPLOT_SCRIPT"
-        if [ $i -lt $((CONFIG_COUNT-1)) ]; then
-            echo -n ", " >> "$GNUPLOT_SCRIPT"
-        fi
-    done
-    
-    # Execute gnuplot
-    gnuplot "$GNUPLOT_SCRIPT"
-    echo "Charts generated: $RESULTS_DIR/miss_rates.png"
-else
-    print_colored "$YELLOW" "Gnuplot not found. Skipping chart generation."
+# Run simulations in parallel
+cat "$job_list" | xargs -n 2 -P "$PARALLEL_JOBS" -I {} bash -c 'run_simulation "$@"' _ {}
+
+print_status $GREEN "All simulations completed!"
+echo ""
+
+# Combine all CSV results
+print_status $BLUE "Combining results..."
+combined_csv="${RESULTS_DIR}/combined_results.csv"
+echo "Config,Trace,L1_Hit_Rate,L2_Hit_Rate,Total_Accesses,Processing_Time_ms" > "$combined_csv"
+for csv_file in "${RESULTS_DIR}"/*.csv; do
+    if [ "$(basename "$csv_file")" != "combined_results.csv" ]; then
+        tail -n +2 "$csv_file" >> "$combined_csv"
+    fi
+done
+
+print_status $GREEN "Combined results saved to: $combined_csv"
+
+# Generate performance summary
+summary_file="${RESULTS_DIR}/performance_summary.txt"
+{
+    echo "Cache Simulator Performance Summary"
+    echo "==================================="
+    echo "Generated: $(date)"
+    echo ""
+    echo "Total Simulations: $total_jobs"
+    echo "Configurations: ${#config_files[@]}"
+    echo "Traces: ${#trace_files[@]}"
+    echo ""
+    echo "Top Performing Configurations (by L1 Hit Rate):"
+    tail -n +2 "$combined_csv" | sort -t, -k3 -nr | head -5 | \
+        awk -F, '{printf "  %-20s %-20s %6.2f%%\n", $1, $2, $3}'
+    echo ""
+    echo "Fastest Processing Times:"
+    tail -n +2 "$combined_csv" | sort -t, -k6 -n | head -5 | \
+        awk -F, '{printf "  %-20s %-20s %8.2f ms\n", $1, $2, $6}'
+} > "$summary_file"
+
+print_status $GREEN "Performance summary saved to: $summary_file"
+
+# Generate charts if requested
+if [ "$GENERATE_CHARTS" = true ]; then
+    if command -v gnuplot &> /dev/null; then
+        print_status $BLUE "Generating performance charts..."
+        
+        # Create gnuplot script for hit rate comparison
+        gnuplot_script="${RESULTS_DIR}/generate_charts.gp"
+        {
+            echo "set terminal png size 1200,800"
+            echo "set output '${RESULTS_DIR}/hit_rate_comparison.png'"
+            echo "set title 'L1 Cache Hit Rate Comparison'"
+            echo "set xlabel 'Configuration'"
+            echo "set ylabel 'Hit Rate (%)'"
+            echo "set style data histograms"
+            echo "set style histogram cluster gap 1"
+            echo "set style fill solid border -1"
+            echo "set boxwidth 0.9"
+            echo "set xtic rotate by -45 scale 0"
+            echo "plot '${combined_csv}' using 3:xtic(1) title 'L1 Hit Rate'"
+        } > "$gnuplot_script"
+        
+        gnuplot "$gnuplot_script"
+        print_status $GREEN "Chart generated: ${RESULTS_DIR}/hit_rate_comparison.png"
+    else
+        print_status $YELLOW "Warning: gnuplot not found. Skipping chart generation."
+        print_status $YELLOW "Install gnuplot to enable chart generation."
+    fi
 fi
 
+print_status $BLUE "Simulation Results Summary:"
+print_status $BLUE "==========================="
+cat "$summary_file"
 echo ""
-print_colored "$GREEN" "All simulations completed successfully!"
+print_status $GREEN "All results saved to: $RESULTS_DIR"
+print_status $GREEN "Simulation suite completed successfully!"

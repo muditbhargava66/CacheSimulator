@@ -45,11 +45,10 @@ public:
         assert(buffer.getLastAccessedIndex() == 0 && "Last accessed index should be 0");
         
         // Check that the correct addresses were prefetched
-        const auto& bufferContents = buffer.getBuffer();
-        assert(bufferContents[0] == 0x1000 && "First entry should be the prefetch address");
-        assert(bufferContents[1] == 0x1001 && "Second entry should be prefetch address + 1");
-        assert(bufferContents[2] == 0x1002 && "Third entry should be prefetch address + 2");
-        assert(bufferContents[3] == 0x1003 && "Fourth entry should be prefetch address + 3");
+        assert(buffer.getBuffer()[0] == 0x1000 && "First entry should be the prefetch address");
+        assert(buffer.getBuffer()[1] == 0x1001 && "Second entry should be prefetch address + 1");
+        assert(buffer.getBuffer()[2] == 0x1002 && "Third entry should be prefetch address + 2");
+        assert(buffer.getBuffer()[3] == 0x1003 && "Fourth entry should be prefetch address + 3");
         
         std::cout << "Stream Buffer prefetching test passed." << std::endl;
     }
@@ -65,13 +64,9 @@ public:
         buffer.prefetch(0x2000);
         
         // Test accessing addresses in the buffer
-        bool hit1 = buffer.access(0x2000); // Should hit at index 0
-        bool hit2 = buffer.access(0x2002); // Should hit at index 2
-        bool miss1 = buffer.access(0x3000); // Should miss
-        
-        assert(hit1 && "Access to 0x2000 should be a hit");
-        assert(hit2 && "Access to 0x2002 should be a hit");
-        assert(!miss1 && "Access to 0x3000 should be a miss");
+        assert(buffer.access(0x2000) && "Access to 0x2000 should be a hit");
+        assert(buffer.access(0x2002) && "Access to 0x2002 should be a hit");
+        assert(!buffer.access(0x3000) && "Access to 0x3000 should be a miss");
         
         // Check statistics
         assert(buffer.getHits() == 2 && "Should have 2 hits");
@@ -95,8 +90,7 @@ public:
         buffer.prefetch(0x3000);
         
         // Access an address in the middle of the buffer
-        bool hit = buffer.access(0x3002); // Access index 2
-        assert(hit && "Access to 0x3002 should hit");
+        assert(buffer.access(0x3002) && "Access to 0x3002 should hit");
         assert(buffer.getLastAccessedIndex() == 2 && "Last accessed index should be 2");
         
         // Shift buffer (should remove entries 0, 1, and 2)
@@ -106,13 +100,9 @@ public:
         assert(buffer.getLastAccessedIndex() == -1 && "Last accessed index should be reset to -1");
         
         // Access addresses that were in the buffer
-        bool miss1 = buffer.access(0x3000); // Should miss (shifted out)
-        bool miss2 = buffer.access(0x3002); // Should miss (shifted out)
-        bool hit2 = buffer.access(0x3003); // Should still hit
-        
-        assert(!miss1 && "Access to 0x3000 should miss after shift");
-        assert(!miss2 && "Access to 0x3002 should miss after shift");
-        assert(hit2 && "Access to 0x3003 should still hit");
+        assert(!buffer.access(0x3000) && "Access to 0x3000 should miss after shift");
+        assert(!buffer.access(0x3002) && "Access to 0x3002 should miss after shift");
+        assert(buffer.access(0x3003) && "Access to 0x3003 should still hit");
         
         // Check that the buffer size is preserved
         assert(buffer.getBuffer().size() == 6 && "Buffer size should remain unchanged");

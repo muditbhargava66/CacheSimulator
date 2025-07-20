@@ -1,0 +1,118 @@
+# Multi-processor trace for testing MESI coherence protocol
+# Format: <processor_id> <r/w> <address>
+# This trace demonstrates various coherence scenarios
+
+# Processor 0 reads private data
+0 r 0x10000
+0 r 0x10040
+0 r 0x10080
+0 r 0x100c0
+
+# Processor 1 reads different private data
+1 r 0x20000
+1 r 0x20040
+1 r 0x20080
+1 r 0x200c0
+
+# Shared read scenario - both processors read same data
+0 r 0x30000
+1 r 0x30000
+0 r 0x30040
+1 r 0x30040
+
+# Write to shared data - invalidation
+0 w 0x30000
+# Now P1's copy should be invalid
+1 r 0x30000
+
+# False sharing - different bytes in same cache line
+0 w 0x40000
+1 w 0x40020
+0 r 0x40000
+1 r 0x40020
+
+# Producer-consumer pattern
+0 w 0x50000
+0 w 0x50040
+0 w 0x50080
+# Memory barrier would go here
+1 r 0x50000
+1 r 0x50040
+1 r 0x50080
+
+# Ping-pong pattern (cache line bouncing)
+0 w 0x60000
+1 w 0x60000
+0 w 0x60000
+1 w 0x60000
+0 w 0x60000
+1 w 0x60000
+
+# Multiple readers after write
+0 w 0x70000
+1 r 0x70000
+2 r 0x70000
+3 r 0x70000
+
+# Processor 2 and 3 join in
+2 r 0x80000
+2 r 0x80040
+3 r 0x90000
+3 r 0x90040
+
+# All processors access shared region
+0 r 0xa0000
+1 r 0xa0000
+2 r 0xa0000
+3 r 0xa0000
+
+# Exclusive to modified transition
+0 r 0xb0000
+0 w 0xb0000
+
+# Modified to shared transition
+0 w 0xc0000
+1 r 0xc0000
+
+# Complex pattern - lock acquisition
+0 r 0xd0000  # Check lock
+0 w 0xd0000  # Acquire lock
+0 w 0xd0040  # Critical section
+0 w 0xd0080
+0 w 0xd0000  # Release lock
+
+1 r 0xd0000  # Check lock
+1 w 0xd0000  # Acquire lock
+1 w 0xd0040  # Critical section
+1 w 0xd0080
+1 w 0xd0000  # Release lock
+
+# Migratory sharing pattern
+0 w 0xe0000
+0 w 0xe0040
+0 w 0xe0080
+1 r 0xe0000
+1 w 0xe0000
+1 w 0xe0040
+1 w 0xe0080
+2 r 0xe0000
+2 w 0xe0000
+2 w 0xe0040
+2 w 0xe0080
+
+# Broadcast invalidation scenario
+0 w 0xf0000
+1 r 0xf0000
+2 r 0xf0000
+3 r 0xf0000
+0 w 0xf0000  # Should invalidate all other copies
+
+# End with some private accesses
+0 r 0x100000
+0 r 0x100040
+1 r 0x110000
+1 r 0x110040
+2 r 0x120000
+2 r 0x120040
+3 r 0x130000
+3 r 0x130040

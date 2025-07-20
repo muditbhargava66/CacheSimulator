@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(CacheSimulator VERSION 1.1.0 LANGUAGES CXX)
+project(CacheSimulator VERSION 1.2.0 LANGUAGES CXX)
 
 # Set C++17 as the required standard
 set(CMAKE_CXX_STANDARD 17)
@@ -47,6 +47,13 @@ file(GLOB_RECURSE CORE_SOURCES "src/core/*.cpp")
 file(GLOB_RECURSE UTILS_SOURCES "src/utils/*.cpp")
 file(GLOB MAIN_SOURCES "src/main.cpp")
 
+# Explicitly add new v1.1.0 and v1.2.0 source files to ensure they're included
+list(APPEND CORE_SOURCES "src/core/write_policy.cpp")
+list(APPEND CORE_SOURCES "src/core/multiprocessor/processor_core.cpp")
+list(APPEND CORE_SOURCES "src/core/multiprocessor/coherence_controller.cpp")
+list(APPEND CORE_SOURCES "src/core/multiprocessor/interconnect.cpp")
+# Note: victim_cache.h, parallel_executor.h are header-only
+
 # Define header files
 file(GLOB_RECURSE CORE_HEADERS "src/core/*.h")
 file(GLOB_RECURSE UTILS_HEADERS "src/utils/*.h")
@@ -57,6 +64,10 @@ set(ALL_HEADERS ${CORE_HEADERS} ${UTILS_HEADERS})
 
 # Define library for tests to link against
 add_library(cachesim_lib STATIC ${CORE_SOURCES} ${UTILS_SOURCES})
+
+# Link against threads library for parallel processing
+find_package(Threads REQUIRED)
+target_link_libraries(cachesim_lib ${CMAKE_THREAD_LIBS_INIT})
 
 # Define main executable
 add_executable(cachesim ${MAIN_SOURCES})
@@ -74,24 +85,54 @@ endforeach()
 # Enable testing
 enable_testing()
 
-# Add unit tests
-file(GLOB_RECURSE UNIT_TEST_SOURCES "tests/unit/*.cpp")
-foreach(TEST_SOURCE ${UNIT_TEST_SOURCES})
+# Add unit tests - Core components
+file(GLOB CORE_TEST_SOURCES "tests/unit/core/*.cpp")
+foreach(TEST_SOURCE ${CORE_TEST_SOURCES})
     get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
     add_executable(${TEST_NAME} ${TEST_SOURCE})
     target_link_libraries(${TEST_NAME} cachesim_lib)
-    set_target_properties(${TEST_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/unit)
-    add_test(NAME ${TEST_NAME} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/unit/${TEST_NAME})
+    set_target_properties(${TEST_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/unit/core)
+    add_test(NAME unit_core_${TEST_NAME} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/unit/core/${TEST_NAME})
 endforeach()
 
-# Add validation tests
-file(GLOB_RECURSE VALIDATION_TEST_SOURCES "tests/validation/*.cpp")
-foreach(TEST_SOURCE ${VALIDATION_TEST_SOURCES})
+# Add unit tests - Policies
+file(GLOB POLICY_TEST_SOURCES "tests/unit/policies/*.cpp")
+foreach(TEST_SOURCE ${POLICY_TEST_SOURCES})
     get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
     add_executable(${TEST_NAME} ${TEST_SOURCE})
     target_link_libraries(${TEST_NAME} cachesim_lib)
-    set_target_properties(${TEST_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/validation)
-    add_test(NAME ${TEST_NAME} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/validation/${TEST_NAME})
+    set_target_properties(${TEST_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/unit/policies)
+    add_test(NAME unit_policies_${TEST_NAME} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/unit/policies/${TEST_NAME})
+endforeach()
+
+# Add unit tests - Utils
+file(GLOB UTILS_TEST_SOURCES "tests/unit/utils/*.cpp")
+foreach(TEST_SOURCE ${UTILS_TEST_SOURCES})
+    get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
+    add_executable(${TEST_NAME} ${TEST_SOURCE})
+    target_link_libraries(${TEST_NAME} cachesim_lib)
+    set_target_properties(${TEST_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/unit/utils)
+    add_test(NAME unit_utils_${TEST_NAME} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/unit/utils/${TEST_NAME})
+endforeach()
+
+# Add integration tests
+file(GLOB INTEGRATION_TEST_SOURCES "tests/integration/*.cpp")
+foreach(TEST_SOURCE ${INTEGRATION_TEST_SOURCES})
+    get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
+    add_executable(${TEST_NAME} ${TEST_SOURCE})
+    target_link_libraries(${TEST_NAME} cachesim_lib)
+    set_target_properties(${TEST_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/integration)
+    add_test(NAME integration_${TEST_NAME} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/integration/${TEST_NAME})
+endforeach()
+
+# Add performance tests
+file(GLOB PERFORMANCE_TEST_SOURCES "tests/performance/*.cpp")
+foreach(TEST_SOURCE ${PERFORMANCE_TEST_SOURCES})
+    get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
+    add_executable(${TEST_NAME} ${TEST_SOURCE})
+    target_link_libraries(${TEST_NAME} cachesim_lib)
+    set_target_properties(${TEST_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/performance)
+    add_test(NAME performance_${TEST_NAME} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/performance/${TEST_NAME})
 endforeach()
 
 # Install targets

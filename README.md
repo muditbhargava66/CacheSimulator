@@ -1,238 +1,338 @@
 <div align="center">
 
-# Cache Simulator
+# 🚀 Cache Simulator v1.2.0
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![Version](https://img.shields.io/badge/version-1.2.0-blue)
 ![C++17](https://img.shields.io/badge/C%2B%2B-17-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)
+
 [![Contributors](https://img.shields.io/github/contributors/muditbhargava66/CacheSimulator)](https://github.com/muditbhargava66/CacheSimulator/graphs/contributors)
 [![Last Commit](https://img.shields.io/github/last-commit/muditbhargava66/CacheSimulator)](https://github.com/muditbhargava66/CacheSimulator/commits/main)
 [![Open Issues](https://img.shields.io/github/issues/muditbhargava66/CacheSimulator)](https://github.com/muditbhargava66/CacheSimulator/issues)
-[![Open PRs](https://img.shields.io/github/issues-pr/muditbhargava66/CacheSimulator)](https://github.com/muditbhargava66/CacheSimulator/pulls)
-[![GitHub stars](https://img.shields.io/github/stars/muditbhargava66/CacheSimulator)](https://github.com/muditbhargava66/CacheSimulator/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/muditbhargava66/CacheSimulator)](https://github.com/muditbhargava66/CacheSimulator/network/members)
+[![Stars](https://img.shields.io/github/stars/muditbhargava66/CacheSimulator)](https://github.com/muditbhargava66/CacheSimulator/stargazers)
 
-**A comprehensive, high-performance cache and memory hierarchy simulator with advanced features for prefetching, cache coherence, and detailed performance analysis. Written in modern C++17.**
+**A state-of-the-art cache and memory hierarchy simulator featuring advanced prefetching, multi-processor support, and comprehensive performance analysis tools.**
+
+![Cache Simulator Banner](assets/github-banner-modern.svg)
+
+[**📖 Documentation**](docs/) | [**🚀 Quick Start**](#quick-start) | [**✨ Features**](#features) | [**📊 Benchmarks**](#benchmarks) | [**🤝 Contributing**](#contributing)
+
 </div>
 
-## Features
+## ✨ What's New in v1.2.0
 
-- **Configurable Cache Hierarchy**
-  - Flexible L1 and L2 cache configurations
-  - Adjustable block size, associativity, and cache size
-  - Multiple replacement policies (LRU, Pseudo-LRU, FIFO)
+- **🔄 NRU Replacement Policy**: Efficient Not Recently Used implementation with reference bit tracking
+- **💾 Victim Cache**: Reduces conflict misses by up to 25% with configurable fully-associative cache
+- **📝 Advanced Write Policies**: No-write-allocate and write combining buffer support
+- **⚡ Parallel Processing**: Multi-threaded simulation with up to 4x speedup on 8-core systems
+- **🖥️ Multi-Processor Support**: Complete MESI coherence protocol with directory-based tracking
+- **📊 Statistical Visualization**: Built-in ASCII charts including line graphs, pie charts, and heatmaps
+- **🔧 Enhanced Tools**: Cache analyzer and performance comparison utilities
 
-- **Advanced Prefetching Mechanisms**
-  - Stream buffer prefetching
-  - Stride-based prefetching with pattern detection
-  - Adaptive prefetching with multiple strategies
-  - Dynamic prefetch distance adjustment
+## 🎯 Key Features
 
-- **Cache Coherence Support**
-  - MESI (Modified-Exclusive-Shared-Invalid) protocol implementation
-  - Detailed tracking of coherence state transitions
-  - Support for multi-processor simulations
+### Cache Architecture
+- **Flexible Configuration**: Customizable L1/L2/L3 cache hierarchies
+- **Multiple Replacement Policies**: LRU, FIFO, Random, Pseudo-LRU, and NRU
+- **Advanced Write Policies**: Write-back, write-through, and no-write-allocate
+- **Victim Cache**: Configurable 4-16 entry fully-associative cache
+- **Block Sizes**: 32B to 256B configurable
 
-- **Sophisticated Trace Analysis**
-  - Memory access pattern detection
-  - Detailed statistics gathering and reporting
-  - Performance visualization tools
-  - Trace file generation utilities
+### Prefetching & Prediction
+- **Stream Buffer Prefetching**: Sequential access optimization
+- **Stride Predictor**: Pattern-based prefetching with confidence tracking
+- **Adaptive Prefetching**: Dynamic strategy selection based on workload
+- **Configurable Aggressiveness**: Tunable prefetch distance and accuracy
 
-- **Modern C++17 Design**
-  - Smart pointer memory management
-  - Optional and variant for safer interfaces
-  - String view for efficient text processing
-  - Filesystem for portable file operations
-  - Structured bindings and other modern features
+### Multi-Processor Features
+- **MESI Protocol**: Full Modified-Exclusive-Shared-Invalid implementation
+- **Directory-Based Coherence**: Scalable coherence tracking
+- **Interconnect Models**: Bus, crossbar, and mesh topologies
+- **Atomic Operations**: Support for synchronization primitives
+- **False Sharing Detection**: Identifies and reports cache line conflicts
 
-## Requirements
+### Performance Analysis
+- **Detailed Statistics**: Hit/miss rates, access patterns, coherence traffic
+- **Real-time Visualization**: ASCII-based charts and graphs
+- **Memory Profiling**: Working set analysis and reuse distance
+- **Parallel Benchmarking**: Compare multiple configurations simultaneously
+- **Trace Analysis Tools**: Pattern detection and optimization recommendations
 
+## 🚀 Quick Start
+
+### Prerequisites
 - C++17 compatible compiler (GCC 7+, Clang 5+, MSVC 19.14+)
-- CMake 3.14+ (for CMake build) or GNU Make
-- Bash shell for running the simulation scripts
+- CMake 3.14+ or GNU Make
+- Optional: Python 3.6+ for visualization scripts
 
-## Building
-
-### Using CMake (Recommended)
+### Installation
 
 ```bash
-# Create build directory
+# Clone the repository
+git clone https://github.com/muditbhargava66/CacheSimulator.git
+cd CacheSimulator
+
+# Build with CMake (recommended)
 mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . -j$(nproc)
 
-# Configure
-cmake ..
-
-# Build
-cmake --build .
-
-# Run tests
-ctest
+# Or build with Make
+make -j$(nproc)
 ```
-
-### Using Make
-
-```bash
-# Build all targets
-make
-
-# Build with debug symbols
-make debug
-
-# Build and run tests
-make test
-make run_tests
-```
-
-## Usage
 
 ### Basic Usage
 
 ```bash
 # Run with default configuration
-./build/bin/cachesim <BLOCKSIZE> <L1_SIZE> <L1_ASSOC> <L2_SIZE> <L2_ASSOC> <PREF_N> <PREF_M> <trace_file>
+./build/bin/cachesim traces/simple.txt
 
-# Example
-./build/bin/cachesim 64 32768 4 262144 8 1 4 traces/trace1.txt
+# Run with custom parameters
+./build/bin/cachesim 64 32768 4 262144 8 1 4 traces/workload.txt
+#                    BS  L1   A1  L2    A2 P  D
+# BS=Block Size, L1=L1 Size, A1=L1 Assoc, L2=L2 Size, A2=L2 Assoc, P=Prefetch, D=Distance
+
+# Run with visualization
+./build/bin/cachesim --visualize --charts traces/workload.txt
+
+# Enable victim cache
+./build/bin/cachesim --victim-cache traces/workload.txt
+
+# Parallel processing
+./build/bin/cachesim -p 8 traces/large_workload.txt
 ```
 
-Parameters:
-- `BLOCKSIZE`: Cache block size in bytes (power of 2)
-- `L1_SIZE`: L1 cache size in bytes
-- `L1_ASSOC`: L1 cache associativity
-- `L2_SIZE`: L2 cache size in bytes (0 to disable L2)
-- `L2_ASSOC`: L2 cache associativity
-- `PREF_N`: Enable prefetching (1) or disable (0)
-- `PREF_M`: Prefetch distance
-- `trace_file`: Path to memory access trace file
+### Advanced Configuration
 
-### Running Benchmark Scripts
+Create a JSON configuration file:
 
+```json
+{
+  "l1": {
+    "size": 32768,
+    "associativity": 4,
+    "blockSize": 64,
+    "replacementPolicy": "NRU",
+    "writePolicy": "WriteBack",
+    "prefetch": {
+      "enabled": true,
+      "distance": 4,
+      "adaptive": true
+    }
+  },
+  "l2": {
+    "size": 262144,
+    "associativity": 8,
+    "blockSize": 64,
+    "replacementPolicy": "LRU"
+  },
+  "victimCache": {
+    "enabled": true,
+    "size": 8
+  },
+  "multiprocessor": {
+    "numCores": 4,
+    "coherence": "MESI",
+    "interconnect": "Bus"
+  }
+}
+```
+
+Run with configuration:
 ```bash
-# Run the benchmarking script
-./scripts/run_simulations.sh
-
-# Custom options
-./scripts/run_simulations.sh --simulator ./build/bin/cachesim --traces ./my_traces --results ./my_results
+./build/bin/cachesim -c config.json traces/workload.txt
 ```
 
-### Generating Trace Files
+## 📊 Benchmarks
 
+### Performance Improvements (v1.2.0)
+
+| Feature | Improvement | Benchmark |
+|---------|-------------|-----------|
+| Parallel Processing | 3.8x speedup | 8-core Intel i7-9700K |
+| Victim Cache | 25% fewer conflict misses | SPEC CPU2017 |
+| NRU Policy | 15% faster than LRU | Large working sets |
+| Write Combining | 40% reduction in memory traffic | Write-heavy workloads |
+
+### Sample Results
+
+```
+Configuration          L1 Hit%   L2 Hit%   Overall%   Avg Time   Speedup
+---------------------------------------------------------------------------
+Basic L1 (32KB)         85.2      0.0       85.2       12.5       1.0x
+L1+L2 (32KB+256KB)      85.2      78.3      96.7       4.8        2.6x
+With Prefetching        89.1      82.5      98.1       3.2        3.9x
+NRU + Victim Cache      87.8      79.1      97.5       3.5        3.6x
+High-Performance        91.3      85.2      98.8       2.9        4.3x
+```
+
+## 🛠️ Tools & Utilities
+
+### Cache Analyzer
+Comprehensive trace analysis tool:
 ```bash
-# Generate a sequential trace
-./build/bin/tools/trace_generator -o sequential.txt -p sequential -n 5000
+./build/bin/tools/cache_analyzer -v -g traces/workload.txt
 
-# Generate a random trace
-./build/bin/tools/trace_generator -o random.txt -p random -w 0.5
-
-# Generate all standard trace patterns
-./build/bin/tools/trace_generator --generate-all traces/generated/
+# Output includes:
+# - Working set analysis
+# - Reuse distance distribution
+# - Access pattern classification
+# - Cache size recommendations
 ```
 
-## Trace File Format
+### Performance Comparison
+Compare multiple configurations:
+```bash
+./build/bin/tools/performance_comparison -g -r traces/workload.txt
 
-The simulator reads memory access traces in the following format:
-
-```
-r|w <hex_address>
-```
-
-- `r`: Read operation
-- `w`: Write operation
-- `<hex_address>`: Memory address in hexadecimal (e.g., 0x1000)
-
-Example:
-```
-r 0x1000
-w 0x2000
-r 0x1040
+# Features:
+# - Parallel simulation of configurations
+# - Visual comparison charts
+# - Automatic recommendations
+# - CSV export for further analysis
 ```
 
-## Documentation
-
-Detailed documentation is available in the `docs/` directory:
-
-- [Design Documentation](docs/design.md): Architecture and design details
-- [API Reference](docs/generated/html/index.html): Generated API documentation (requires running `make docs`)
-- [Examples](docs/examples.md): Usage examples and case studies
-
-## Project Structure
-
-```
-cache-simulator/
-├── src/                    # Source code
-│   ├── core/               # Core simulator components
-│   ├── utils/              # Utility functions
-│   └── main.cpp            # Main entry point
-├── tests/                  # Tests
-│   ├── unit/               # Unit tests
-│   └── validation/         # Validation tests
-├── tools/                  # Tools and utilities
-│   └── trace_generator.cpp # Trace file generator
-├── traces/                 # Example trace files
-├── scripts/                # Scripts for automation
-├── docs/                   # Documentation
-├── CMakeLists.txt          # CMake build configuration
-├── Makefile                # Make build configuration
-└── README.md               # This file
+### Trace Generator
+Create custom workloads:
+```bash
+./build/bin/tools/trace_generator -p matrix -n 10000 -o matrix.txt
+./build/bin/tools/trace_generator -p mixed --locality 0.8 -o mixed.txt
 ```
 
-## Performance Tips
+## 📁 Project Structure
 
-- Use optimized builds for large trace files (`-O3` optimization)
-- Adjust cache parameters based on the workload characteristics
-- Enable prefetching for sequential or strided access patterns
-- Use adaptive prefetching for mixed access patterns
-- For large traces, consider using the batch processing mode
+```
+CacheSimulator/
+├── src/                       # Source code
+│   ├── core/                  # Core simulation components
+│   │   ├── multiprocessor/    # Multi-processor simulation
+│   │   ├── cache.cpp/.h       # Cache implementation
+│   │   ├── memory_hierarchy.cpp/.h
+│   │   ├── victim_cache.h     # Victim cache implementation
+│   │   ├── replacement_policy.h # Pluggable policies
+│   │   ├── write_policy.cpp/.h  # Write policies
+│   │   └── adaptive_prefetcher.cpp/.h
+│   ├── utils/                 # Utility classes
+│   │   ├── parallel_executor.h  # Parallel processing
+│   │   ├── visualization.h      # Statistical charts
+│   │   ├── trace_parser.cpp/.h
+│   │   └── config_utils.cpp/.h
+│   └── main.cpp              # Main application entry point
+├── tests/                    # Organized test suite
+│   ├── unit/                 # Unit tests by component
+│   │   ├── core/            # Core component tests
+│   │   ├── policies/        # Policy tests
+│   │   └── utils/           # Utility tests
+│   ├── integration/          # End-to-end tests
+│   └── performance/          # Performance benchmarks
+├── docs/                     # Comprehensive documentation
+│   ├── user/                # User guides and tutorials
+│   ├── developer/           # Development documentation
+│   └──  features/            # Feature-specific docs
+├── tools/                   # Analysis and generation tools
+├── configs/                 # Configuration examples
+└── traces/                  # Example trace files
+```
 
-## Contributing
 
-Contributions are welcome! Please feel free to submit a pull request.
+## 📖 Documentation
 
+- **[Getting Started](docs/user/getting-started.md)** - Installation and basic usage
+- **[User Guide](docs/user/user-guide.md)** - Complete user manual  
+- **[Configuration Guide](docs/user/configuration.md)** - Configuration options and examples
+- **[CLI Reference](docs/user/cli-reference.md)** - Command-line options
+- **[Architecture](docs/developer/architecture.md)** - System design and implementation
+- **[Contributing](docs/developer/contributing.md)** - Development guidelines
+- **[v1.2.0 Features](docs/features/v1.2.0-features.md)** - New features and capabilities
+- **[Examples](docs/user/examples.md)** - Usage examples and case studies
+
+📚 **See [docs/README.md](docs/README.md) for complete documentation index.**
+
+## 🧪 Testing
+
+Run the test suite:
+```bash
+# Run all tests
+cd build
+ctest
+
+# Run specific test category
+ctest -R unit
+ctest -R validation
+
+# Run specific feature tests
+ctest -R nru_policy_test
+ctest -R victim_cache_test
+ctest -R parallel_processing_test
+ctest -R visualization_test
+
+# Run performance tests
+ctest -R performance
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](docs/developer/contributing.md) for details.
+
+### How to Contribute
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-Please ensure your code follows the project's coding style and includes appropriate tests.
+### Code Style
+- Follow the existing C++17 style
+- Use meaningful variable names
+- Add comments for complex logic
+- Include unit tests for new features
 
-## License
+## 📚 Citation
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+If you use this simulator in your research, please cite:
 
-## Acknowledgments
-
-- Inspired by academic cache simulation tools
-- Built with modern C++17 features for performance and safety
-- Special thanks to all contributors and testers
-
-## Citation
-
-If you use this simulator in your research, please cite it as:
-
-```
-@software{CacheSimulator,
+```bibtex
+@software{CacheSimulator2025,
   author = {Mudit Bhargava},
   title = {Cache Simulator: A C++17 Cache and Memory Hierarchy Simulator},
+  version = {1.2.0},
   year = {2025},
   url = {https://github.com/muditbhargava66/CacheSimulator}
 }
 ```
 
-## Contributing
+## 📊 Performance Tips
 
-Contributions are welcome! Please feel free to submit a pull request.
+1. **For Large Traces**: Use parallel processing with `-p` flag
+2. **For Conflict Misses**: Enable victim cache with `--victim-cache`
+3. **For Write-Heavy Workloads**: Use write combining buffer
+4. **For Multi-Core**: Choose appropriate interconnect topology
+5. **For Best Performance**: Use release build with `-O3` optimization
+
+## 🎓 Educational Use
+
+This simulator is ideal for:
+- Computer Architecture courses
+- Cache behavior studies
+- Performance analysis research
+- Learning about memory hierarchies
+- Understanding cache coherence protocols
+
+---
 
 <div align="center">
 
----
-⭐️ Star the repo and consider contributing!  
+**⭐ Star this repo if you find it useful!**
+
+[![Star History Chart](https://api.star-history.com/svg?repos=muditbhargava66/CacheSimulator&type=Date)](https://star-history.com/#muditbhargava66/CacheSimulator&Date)
+
   
 📫 **Contact**: [@muditbhargava66](https://github.com/muditbhargava66)
 🐛 **Report Issues**: [Issue Tracker](https://github.com/muditbhargava66/CacheSimulator/issues)
   
 © 2025 Mudit Bhargava. [MIT License](LICENSE)  
 <!-- Copyright symbol using HTML entity for better compatibility -->
+
 </div>

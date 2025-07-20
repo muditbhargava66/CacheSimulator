@@ -12,6 +12,8 @@
 #include <algorithm>
 #include <numeric>
 #include <iomanip>
+#include <cmath>
+#include <limits>
 
 namespace cachesim {
 

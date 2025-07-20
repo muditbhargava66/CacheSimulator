@@ -2,8 +2,8 @@
  * @file main.cpp
  * @brief Cache Simulator main entry point
  * @author Mudit Bhargava
- * @date 2025-05-27
- * @version 1.1.0
+ * @date 2025-05-29
+ * @version 1.2.0
  *
  * This file contains the main entry point for the Cache Simulator application.
  * It handles command-line argument parsing, configuration loading, and orchestrates
@@ -22,6 +22,9 @@
 #include <memory>
 #include <thread>
 #include <algorithm>
+#include <cmath>
+#include <iomanip>
+#include <sstream>
 
 #include "core/memory_hierarchy.h"
 #include "utils/trace_parser.h"
@@ -32,9 +35,204 @@
 #include "utils/profiler.h"
 #include "utils/logger.h"
 #include "utils/benchmark.h"
+#include "utils/parallel_executor.h"
+#include "core/victim_cache.h"
 
 using namespace cachesim;
 namespace fs = std::filesystem;
+
+/**
+ * @brief Structure to hold cache block state information for visualization
+ */
+struct CacheBlockState {
+    uint64_t address;         // Memory address
+    uint64_t tag;            // Tag bits
+    uint32_t set;            // Set index
+    uint32_t way;            // Way within set
+    bool valid;              // Valid bit
+    bool dirty;              // Dirty bit
+    uint32_t accessCount;    // Number of times this block was accessed
+    uint64_t lastAccess;     // Timestamp of last access
+    bool prefetched;         // Whether this block was prefetched
+};
+
+/**
+ * @brief Extract cache state from a cache object
+ * @param cache Reference to the cache object
+ * @param cacheLevel Cache level identifier (for display purposes)
+ * @return Vector of cache block states
+ */
+std::vector<CacheBlockState> extractCacheState(const Cache& cache, [[maybe_unused]] int cacheLevel = 1) {
+    std::vector<CacheBlockState> result;
+    
+    // Get cache configuration
+    uint32_t numSets = cache.getNumSets();
+    uint32_t associativity = cache.getAssociativity();
+    uint32_t blockSize = cache.getBlockSize();
+    
+    // Calculate bit positions for address decoding
+    uint32_t offsetBits = static_cast<uint32_t>(std::log2(blockSize));
+    uint32_t setBits = static_cast<uint32_t>(std::log2(numSets));
+    
+    // Extract state for each cache block
+    for (uint32_t set = 0; set < numSets; ++set) {
+        for (uint32_t way = 0; way < associativity; ++way) {
+            CacheBlockState blockState;
+            
+            blockState.set = set;
+            blockState.way = way;
+            
+            // Get block information from cache
+            if (cache.isBlockValid(set, way)) {
+                blockState.valid = true;
+                blockState.dirty = cache.isBlockDirty(set, way);
+                blockState.tag = cache.getBlockTag(set, way);
+                blockState.accessCount = cache.getBlockAccessCount(set, way);
+                blockState.lastAccess = cache.getBlockLastAccess(set, way);
+                blockState.prefetched = cache.isBlockPrefetched(set, way);
+                
+                // Reconstruct full address from tag and set
+                blockState.address = (blockState.tag << (offsetBits + setBits)) | (set << offsetBits);
+                
+                result.push_back(blockState);
+            }
+        }
+    }
+    
+    return result;
+}
+
+/**
+ * @brief Create ASCII visualization of cache state
+ * @param blockStates Vector of cache block states
+ * @param cache Reference to cache for configuration info
+ * @param maxBlocks Maximum number of blocks to display (0 for all)
+ * @param useColors Whether to use ANSI colors
+ * @param cacheLevel Cache level for display
+ * @return String containing ASCII visualization
+ */
+std::string createCacheStateVisualization(const std::vector<CacheBlockState>& blockStates,
+                                         const Cache& cache,
+                                         uint32_t maxBlocks = 16,
+                                         bool useColors = true,
+                                         int cacheLevel = 1) {
+    std::ostringstream output;
+    
+    // Get cache configuration
+    uint32_t numSets = cache.getNumSets();
+    uint32_t associativity = cache.getAssociativity();
+    uint32_t blockSize = cache.getBlockSize();
+    
+    // Define ANSI color codes
+    std::string resetColor = useColors ? "\033[0m" : "";
+    std::string headerColor = useColors ? "\033[1;36m" : ""; // Bright Cyan
+    std::string validColor = useColors ? "\033[1;32m" : "";  // Bright Green
+    std::string dirtyColor = useColors ? "\033[1;33m" : "";  // Bright Yellow
+    std::string addressColor = useColors ? "\033[1;34m" : ""; // Bright Blue
+    std::string prefetchColor = useColors ? "\033[1;35m" : ""; // Bright Magenta
+    
+    // Sort blocks by set and way for organized display
+    auto sortedBlocks = blockStates;
+    std::sort(sortedBlocks.begin(), sortedBlocks.end(),
+        [](const CacheBlockState& a, const CacheBlockState& b) {
+            if (a.set != b.set) return a.set < b.set;
+            return a.way < b.way;
+        });
+    
+    // Limit display if requested
+    if (maxBlocks > 0 && sortedBlocks.size() > maxBlocks) {
+        sortedBlocks.resize(maxBlocks);
+    }
+    
+    // Generate header
+    output << headerColor << "╔══════════════════ L" << cacheLevel << " Cache State ═══════════════════╗" << resetColor << std::endl;
+    output << headerColor << "║ Set │ Way │     Tag     │ Valid │ Dirty │   Address   │ Access │ Pref ║" << resetColor << std::endl;
+    output << headerColor << "╠═════╪═════╪═════════════╪═══════╪═══════╪═════════════╪════════╪══════╣" << resetColor << std::endl;
+    
+    // Generate rows for each valid cache block
+    for (const auto& block : sortedBlocks) {
+        output << headerColor << "║ " << resetColor;
+        
+        // Set index (3 digits)
+        output << std::setw(3) << block.set << headerColor << " │ " << resetColor;
+        
+        // Way (3 digits)
+        output << std::setw(3) << block.way << headerColor << " │ " << resetColor;
+        
+        // Tag (11 characters, hex)
+        output << addressColor << "0x" << std::hex << std::setw(9) << std::setfill('0') 
+               << block.tag << std::dec << std::setfill(' ') << headerColor << " │ " << resetColor;
+        
+        // Valid bit
+        output << validColor << std::setw(5) << "Yes" << headerColor << " │ " << resetColor;
+        
+        // Dirty bit
+        if (block.dirty) {
+            output << dirtyColor << std::setw(5) << "Yes";
+        } else {
+            output << std::setw(5) << "No";
+        }
+        output << headerColor << " │ " << resetColor;
+        
+        // Address (11 characters, hex)
+        output << addressColor << "0x" << std::hex << std::setw(9) << std::setfill('0') 
+               << block.address << std::dec << std::setfill(' ') << headerColor << " │ " << resetColor;
+        
+        // Access count (6 digits)
+        output << std::setw(6) << block.accessCount << headerColor << " │ " << resetColor;
+        
+        // Prefetch indicator
+        if (block.prefetched) {
+            output << prefetchColor << std::setw(4) << "Yes";
+        } else {
+            output << std::setw(4) << "No";
+        }
+        output << headerColor << " ║" << resetColor << std::endl;
+    }
+    
+    // Handle empty cache or show "..." if truncated
+    if (sortedBlocks.empty()) {
+        output << headerColor << "║" << std::setw(75) << "Cache is empty or all blocks are invalid" 
+               << " ║" << resetColor << std::endl;
+    } else if (maxBlocks > 0 && blockStates.size() > maxBlocks) {
+        output << headerColor << "║" << std::setw(75) << "... (showing first " + std::to_string(maxBlocks) + " blocks)" 
+               << " ║" << resetColor << std::endl;
+    }
+    
+    // Footer with statistics
+    output << headerColor << "╠═══════════════════════════════════════════════════════════════════════════╣" << resetColor << std::endl;
+    
+    // Cache configuration
+    output << headerColor << "║ Config: " << resetColor << numSets << " sets × " 
+           << associativity << " ways × " << blockSize << " bytes";
+    int padding = 63 - std::to_string(numSets).length() - std::to_string(associativity).length() 
+                  - std::to_string(blockSize).length() - 20;
+    output << std::string(std::max(padding, 0), ' ') << headerColor << " ║" << resetColor << std::endl;
+    
+    // Valid blocks
+    output << headerColor << "║ Valid: " << resetColor << blockStates.size() 
+           << "/" << (numSets * associativity) << " blocks (" 
+           << std::fixed << std::setprecision(1) 
+           << (blockStates.size() * 100.0 / (numSets * associativity)) << "%)";
+    padding = 75 - 9 - std::to_string(blockStates.size()).length() - 
+              std::to_string(numSets * associativity).length() - 13;
+    output << std::string(std::max(padding, 0), ' ') << headerColor << " ║" << resetColor << std::endl;
+    
+    // Dirty blocks
+    size_t dirtyCount = std::count_if(blockStates.begin(), blockStates.end(),
+                                     [](const CacheBlockState& b) { return b.dirty; });
+    output << headerColor << "║ Dirty: " << resetColor << dirtyCount 
+           << "/" << blockStates.size() << " blocks (" 
+           << std::fixed << std::setprecision(1) 
+           << (blockStates.empty() ? 0.0 : (dirtyCount * 100.0 / blockStates.size())) << "%)";
+    padding = 75 - 9 - std::to_string(dirtyCount).length() - 
+              std::to_string(blockStates.size()).length() - 13;
+    output << std::string(std::max(padding, 0), ' ') << headerColor << " ║" << resetColor << std::endl;
+    
+    output << headerColor << "╚═══════════════════════════════════════════════════════════════════════════╝" << resetColor << std::endl;
+    
+    return output.str();
+}
 
 // Command line options
 struct CommandLineOptions {
@@ -48,6 +246,10 @@ struct CommandLineOptions {
     bool help = false;
     bool version = false;
     bool useColors = true;
+    bool parallel = false;
+    size_t numThreads = 0;
+    bool useVictimCache = false;
+    bool showCharts = false;
 };
 
 // Parse command line arguments
@@ -70,6 +272,15 @@ std::optional<CommandLineOptions> parseCommandLine(int argc, char* argv[]) {
             options.useColors = false;
         } else if (arg == "--verbose") {
             options.verbose = true;
+        } else if (arg == "-p" || arg == "--parallel") {
+            options.parallel = true;
+            if (i + 1 < argc && std::isdigit(argv[i+1][0])) {
+                options.numThreads = std::stoi(argv[++i]);
+            }
+        } else if (arg == "--victim-cache") {
+            options.useVictimCache = true;
+        } else if (arg == "--charts") {
+            options.showCharts = true;
         } else if (arg == "-e" || arg == "--export") {
             options.exportResults = true;
             if (i + 1 < argc && argv[i+1][0] != '-') {
@@ -109,6 +320,9 @@ void printUsage(const std::string& programName) {
     std::cout << "  --no-color                 Disable colored output" << std::endl;
     std::cout << "  --verbose                  Enable verbose output" << std::endl;
     std::cout << "  -e, --export [file]        Export results to CSV file" << std::endl;
+    std::cout << "  -p, --parallel [threads]   Enable parallel processing" << std::endl;
+    std::cout << "  --victim-cache             Enable victim cache" << std::endl;
+    std::cout << "  --charts                   Show statistical charts" << std::endl;
     std::cout << std::endl;
     std::cout << "If no configuration file is specified, the simulator uses:" << std::endl;
     std::cout << "  BLOCKSIZE=64 L1_SIZE=32KB L1_ASSOC=4 L2_SIZE=256KB L2_ASSOC=8 PREF=1 PREF_DIST=4" << std::endl;
@@ -118,7 +332,7 @@ void printUsage(const std::string& programName) {
  * Display version information including build details
  */
 void printVersion() {
-    std::cout << "Cache Simulator v1.1.0" << std::endl;
+    std::cout << "Cache Simulator v1.2.0" << std::endl;
     std::cout << "C++17 Edition" << std::endl;
     std::cout << "Copyright (c) 2025 Mudit Bhargava" << std::endl;
     std::cout << "Build Date: " << __DATE__ << " " << __TIME__ << std::endl;
@@ -192,7 +406,7 @@ void runSimulation(const MemoryHierarchyConfig& config, const std::filesystem::p
         profiler.trackAccess(access->address, access->isWrite);
         
         if (visualize) {
-            addresses.push_back(access->address);
+            addresses.push_back(static_cast<uint32_t>(access->address));
         }
         
         accessCount++;
@@ -232,9 +446,45 @@ void runSimulation(const MemoryHierarchyConfig& config, const std::filesystem::p
         std::cout << "==================================" << std::endl;
         std::cout << Visualization::visualizeAccessPattern(addresses, 80, 20, true) << std::endl;
         
-        // You would need to implement a way to get actual cache state from the memory hierarchy
-        // This is just a placeholder
-        // std::cout << Visualization::visualizeCacheState(cache, 16, true) << std::endl;
+        // Cache state visualization
+        std::cout << std::endl;
+        std::cout << "Cache State Visualization" << std::endl;
+        std::cout << "========================" << std::endl;
+        
+        try {
+            // Get L1 cache from memory hierarchy
+            auto l1Cache = hierarchy.getL1Cache();
+            if (l1Cache) {
+                // Extract L1 cache state
+                auto l1BlockStates = extractCacheState(**l1Cache, 1);
+                
+                // Create and display L1 cache visualization
+                std::string l1Visualization = createCacheStateVisualization(l1BlockStates, **l1Cache, 16, true, 1);
+                std::cout << l1Visualization << std::endl;
+                
+                // Show L2 cache if available
+                if (config.l2Config) {
+                    auto l2Cache = hierarchy.getL2Cache();
+                    if (l2Cache) {
+                        auto l2BlockStates = extractCacheState(**l2Cache, 2);
+                        std::string l2Visualization = createCacheStateVisualization(l2BlockStates, **l2Cache, 12, true, 2);
+                        std::cout << l2Visualization << std::endl;
+                    }
+                }
+            } else {
+                std::cout << "Warning: L1 cache not accessible for visualization" << std::endl;
+            }
+        } catch (const std::exception& e) {
+            std::cout << "Error during cache state visualization: " << e.what() << std::endl;
+            // Fallback: Simple cache statistics display
+            std::cout << "Falling back to simple cache statistics:" << std::endl;
+            std::cout << "L1 Hit Rate: " << (hierarchy.getL1HitRate() * 100.0) << "%" << std::endl;
+            std::cout << "L1 Miss Rate: " << (hierarchy.getL1MissRate() * 100.0) << "%" << std::endl;
+            if (config.l2Config) {
+                std::cout << "L2 Hit Rate: " << (hierarchy.getL2HitRate() * 100.0) << "%" << std::endl;
+                std::cout << "L2 Miss Rate: " << (hierarchy.getL2MissRate() * 100.0) << "%" << std::endl;
+            }
+        }
     }
     
     // Export results if requested
@@ -324,7 +574,6 @@ void runBenchmark(const std::vector<MemoryHierarchyConfig>& configs, const std::
         
         // Parse trace
         TraceParser parser(traceFile);
-        MemoryAccess access;
         
         // Process each memory access
         while (auto nextAccess = parser.getNextAccess()) {

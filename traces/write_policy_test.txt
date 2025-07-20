@@ -1,0 +1,97 @@
+# Write Policy Test Trace
+# Tests different write policies and write combining buffer
+
+# Test 1: Write-through vs Write-back behavior
+# Repeated writes to same location (benefits from write-back)
+w 0x1000
+w 0x1000
+w 0x1000
+w 0x1000
+w 0x1000
+
+# Test 2: Write combining buffer
+# Sequential writes that can be combined
+w 0x2000
+w 0x2008
+w 0x2010
+w 0x2018
+w 0x2020
+w 0x2028
+w 0x2030
+w 0x2038
+
+# Test 3: No-write-allocate
+# Writes to non-cached addresses (streaming writes)
+w 0x10000
+w 0x10040
+w 0x10080
+w 0x100c0
+w 0x10100
+w 0x10140
+w 0x10180
+w 0x101c0
+
+# Test 4: Read after write (tests allocation policy)
+w 0x3000  # Write miss - allocate or not?
+r 0x3000  # Should hit if allocated, miss if not
+
+w 0x3040  # Another write miss
+r 0x3040  # Test allocation
+
+# Test 5: Mixed read/write pattern
+r 0x4000
+w 0x4000
+r 0x4008
+w 0x4008
+r 0x4010
+w 0x4010
+
+# Test 6: Distant writes (no combining possible)
+w 0x5000
+w 0x6000
+w 0x7000
+w 0x8000
+w 0x9000
+
+# Test 7: Write, evict, write pattern
+w 0xa000  # Write to set 0
+w 0xb000  # Write to set 0
+w 0xc000  # Write to set 0
+w 0xd000  # Write to set 0
+w 0xe000  # Write to set 0 (causes eviction)
+w 0xa000  # Write to evicted block
+
+# Test 8: Partial block writes (within same cache line)
+w 0xf000
+w 0xf008
+w 0xf010
+w 0xf018
+w 0xf020
+w 0xf028
+w 0xf030
+w 0xf038
+
+# Test 9: Write bursts with gaps
+w 0x11000
+w 0x11008
+# gap
+w 0x11040
+w 0x11048
+# gap
+w 0x11080
+w 0x11088
+
+# Test 10: Alternating read/write
+r 0x12000
+w 0x12000
+r 0x12008
+w 0x12008
+r 0x12010
+w 0x12010
+
+# This trace demonstrates:
+# 1. Write-back vs write-through trade-offs
+# 2. Benefits of write combining
+# 3. No-write-allocate for streaming writes
+# 4. Write allocation policy effects
+# 5. Mixed workload behavior
