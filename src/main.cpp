@@ -3,7 +3,7 @@
  * @brief Cache Simulator main entry point
  * @author Mudit Bhargava
  * @date 2025-05-29
- * @version 1.2.0
+ * @version 1.2.1
  *
  * This file contains the main entry point for the Cache Simulator application.
  * It handles command-line argument parsing, configuration loading, and orchestrates
@@ -332,7 +332,7 @@ void printUsage(const std::string& programName) {
  * Display version information including build details
  */
 void printVersion() {
-    std::cout << "Cache Simulator v1.2.0" << std::endl;
+    std::cout << "Cache Simulator v1.2.1" << std::endl;
     std::cout << "C++17 Edition" << std::endl;
     std::cout << "Copyright (c) 2025 Mudit Bhargava" << std::endl;
     std::cout << "Build Date: " << __DATE__ << " " << __TIME__ << std::endl;

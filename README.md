@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🚀 Cache Simulator v1.2.0
+# 🚀 Cache Simulator
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue)
+![Version](https://img.shields.io/badge/version-1.2.1-blue)
 ![C++17](https://img.shields.io/badge/C%2B%2B-17-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
@@ -297,7 +297,7 @@ If you use this simulator in your research, please cite:
 @software{CacheSimulator2025,
   author = {Mudit Bhargava},
   title = {Cache Simulator: A C++17 Cache and Memory Hierarchy Simulator},
-  version = {1.2.0},
+  version = {1.2.1},
   year = {2025},
   url = {https://github.com/muditbhargava66/CacheSimulator}
 }

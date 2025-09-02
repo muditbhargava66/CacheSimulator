@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(CacheSimulator VERSION 1.2.0 LANGUAGES CXX)
+project(CacheSimulator VERSION 1.2.1 LANGUAGES CXX)
 
 # Set C++17 as the required standard
 set(CMAKE_CXX_STANDARD 17)

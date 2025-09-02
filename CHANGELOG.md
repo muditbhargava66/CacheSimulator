@@ -5,6 +5,26 @@ All notable changes to the Cache Simulator project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-09-02
+
+### Fixed
+- **Critical:** Fixed division by zero error in multiprocessor configurations ([#3](https://github.com/muditbhargava66/CacheSimulator/issues/3))
+- **JSON Parser:** Enhanced configuration parser to handle nested JSON objects (`perCoreL1`, `sharedL2`)
+- **Trace Parser:** Added support for multiprocessor trace format with processor ID prefix
+- **Compatibility:** Maintains full backward compatibility with existing configuration and trace formats
+
+### Technical Details
+- Enhanced `src/utils/config_utils.cpp` to parse nested JSON configurations
+- Updated `src/utils/trace_parser.cpp` to handle both 2-token and 3-token trace formats
+- Added comprehensive validation to prevent cache configuration errors
+- Supports multiple configuration formats: standard, multiprocessor, and legacy
+
+### Testing
+- [x] Original failing command now works: `./build/bin/cachesim --config configs/multiprocessor_4core.json traces/multiprocessor_coherence.txt`
+- [x] Successfully processes 80 memory accesses from multiprocessor trace
+- [x] Compatible with all existing configuration files
+- [x] No performance regression
+
 ## [1.2.0] - 2025-07-19
 
 ### Added
