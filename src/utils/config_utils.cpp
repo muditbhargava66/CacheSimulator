@@ -499,7 +499,7 @@ std::optional<ConfigManager::SimulatorConfig> ConfigManager::parseJsonConfig(con
             value.erase(value.find_last_not_of(" \t") + 1);
             
             // Parse based on current section and key
-            if (currentSection == "perCoreL1" || currentSection.empty()) {
+            if (currentSection == "perCoreL1" || currentSection == "l1" || currentSection.empty()) {
                 if (key == "size") {
                     config.hierarchyConfig.l1Config.size = std::stoi(value);
                 } else if (key == "associativity") {
@@ -521,7 +521,7 @@ std::optional<ConfigManager::SimulatorConfig> ConfigManager::parseJsonConfig(con
                         config.hierarchyConfig.l1Config.writePolicy = WritePolicy::WriteThrough;
                     }
                 }
-            } else if (currentSection == "sharedL2") {
+            } else if (currentSection == "sharedL2" || currentSection == "l2") {
                 // Initialize L2 if not already present
                 if (!config.hierarchyConfig.l2Config) {
                     config.hierarchyConfig.l2Config = CacheConfig{};
