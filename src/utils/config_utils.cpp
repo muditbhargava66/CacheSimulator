@@ -442,85 +442,173 @@ std::optional<ConfigManager::SimulatorConfig> ConfigManager::parseJsonConfig(con
     SimulatorConfig config;
     config.name = "JSON Configuration";
     
-    // Very simple JSON parser (not robust, just for example)
+    std::string currentSection;
+    bool inObject = false;
+    
+    // Enhanced JSON parser to handle nested objects
     while (std::getline(file, line)) {
-        // Remove whitespace
-        line.erase(std::remove_if(line.begin(), line.end(), [](unsigned char c) { 
-            return std::isspace(c); 
-        }), line.end());
+        // Remove leading/trailing whitespace
+        line.erase(0, line.find_first_not_of(" \t"));
+        line.erase(line.find_last_not_of(" \t") + 1);
         
         // Skip empty lines and comments
-        if (line.empty() || line[0] == '/') {
+        if (line.empty() || line[0] == '/' || line[0] == '#') {
             continue;
         }
         
-        // Skip start/end braces
-        if (line == "{" || line == "}") {
+        // Handle object start/end
+        if (line == "{") {
+            inObject = true;
+            continue;
+        } else if (line == "}," || line == "}") {
+            if (!currentSection.empty()) {
+                currentSection.clear();
+            }
             continue;
         }
         
-        // Remove commas and quotes
-        line.erase(std::remove(line.begin(), line.end(), ','), line.end());
-        line.erase(std::remove(line.begin(), line.end(), '\"'), line.end());
+        // Remove trailing comma
+        if (line.back() == ',') {
+            line.pop_back();
+        }
         
-        // Split key:value
-        auto pos = line.find(':');
-        if (pos != std::string::npos) {
-            std::string key = line.substr(0, pos);
-            std::string value = line.substr(pos + 1);
+        // Check for section headers (nested objects)
+        if (line.find("\":") != std::string::npos && line.find("{") != std::string::npos) {
+            // Extract section name
+            auto start = line.find("\"") + 1;
+            auto end = line.find("\"", start);
+            if (start < end) {
+                currentSection = line.substr(start, end - start);
+            }
+            continue;
+        }
+        
+        // Parse key-value pairs
+        auto colonPos = line.find(":");
+        if (colonPos != std::string::npos) {
+            std::string key = line.substr(0, colonPos);
+            std::string value = line.substr(colonPos + 1);
             
-            // Parse specific configuration parameters
-            if (key == "l1_size") {
-                config.hierarchyConfig.l1Config.size = std::stoi(value);
-            } else if (key == "l1_assoc") {
-                config.hierarchyConfig.l1Config.associativity = std::stoi(value);
-            } else if (key == "l2_size") {
-                int l2Size = std::stoi(value);
-                if (l2Size > 0) {
-                    // Initialize L2 if not already present
-                    if (!config.hierarchyConfig.l2Config) {
-                        config.hierarchyConfig.l2Config = CacheConfig{};
+            // Clean up key and value
+            key.erase(std::remove(key.begin(), key.end(), '\"'), key.end());
+            key.erase(std::remove(key.begin(), key.end(), ' '), key.end());
+            key.erase(std::remove(key.begin(), key.end(), '\t'), key.end());
+            
+            value.erase(std::remove(value.begin(), value.end(), '\"'), value.end());
+            value.erase(0, value.find_first_not_of(" \t"));
+            value.erase(value.find_last_not_of(" \t") + 1);
+            
+            // Parse based on current section and key
+            if (currentSection == "perCoreL1" || currentSection.empty()) {
+                if (key == "size") {
+                    config.hierarchyConfig.l1Config.size = std::stoi(value);
+                } else if (key == "associativity") {
+                    config.hierarchyConfig.l1Config.associativity = std::stoi(value);
+                } else if (key == "blockSize") {
+                    config.hierarchyConfig.l1Config.blockSize = std::stoi(value);
+                } else if (key == "replacementPolicy") {
+                    // Handle replacement policy string
+                    if (value == "LRU") {
+                        config.hierarchyConfig.l1Config.replacementPolicy = ReplacementPolicy::LRU;
+                    } else if (value == "NRU") {
+                        config.hierarchyConfig.l1Config.replacementPolicy = ReplacementPolicy::NRU;
                     }
-                    config.hierarchyConfig.l2Config->size = l2Size;
+                } else if (key == "writePolicy") {
+                    // Handle write policy string
+                    if (value == "WriteBack") {
+                        config.hierarchyConfig.l1Config.writePolicy = WritePolicy::WriteBack;
+                    } else if (value == "WriteThrough") {
+                        config.hierarchyConfig.l1Config.writePolicy = WritePolicy::WriteThrough;
+                    }
                 }
-            } else if (key == "l2_assoc") {
-                int l2Assoc = std::stoi(value);
+            } else if (currentSection == "sharedL2") {
+                // Initialize L2 if not already present
                 if (!config.hierarchyConfig.l2Config) {
                     config.hierarchyConfig.l2Config = CacheConfig{};
                 }
-                config.hierarchyConfig.l2Config->associativity = l2Assoc;
-            } else if (key == "block_size") {
-                int blockSize = std::stoi(value);
-                config.hierarchyConfig.l1Config.blockSize = blockSize;
-                if (config.hierarchyConfig.l2Config) {
-                    config.hierarchyConfig.l2Config->blockSize = blockSize;
+                
+                if (key == "size") {
+                    config.hierarchyConfig.l2Config->size = std::stoi(value);
+                } else if (key == "associativity") {
+                    config.hierarchyConfig.l2Config->associativity = std::stoi(value);
+                } else if (key == "blockSize") {
+                    config.hierarchyConfig.l2Config->blockSize = std::stoi(value);
+                } else if (key == "replacementPolicy") {
+                    if (value == "LRU") {
+                        config.hierarchyConfig.l2Config->replacementPolicy = ReplacementPolicy::LRU;
+                    } else if (value == "NRU") {
+                        config.hierarchyConfig.l2Config->replacementPolicy = ReplacementPolicy::NRU;
+                    }
+                } else if (key == "writePolicy") {
+                    if (value == "WriteBack") {
+                        config.hierarchyConfig.l2Config->writePolicy = WritePolicy::WriteBack;
+                    } else if (value == "WriteThrough") {
+                        config.hierarchyConfig.l2Config->writePolicy = WritePolicy::WriteThrough;
+                    }
                 }
-            } else if (key == "prefetch_enabled") {
-                bool prefEnabled = (value == "true");
-                config.hierarchyConfig.l1Config.prefetchEnabled = prefEnabled;
-                if (config.hierarchyConfig.l2Config) {
-                    config.hierarchyConfig.l2Config->prefetchEnabled = prefEnabled;
+            } else if (currentSection.empty()) {
+                // Top-level keys
+                if (key == "name") {
+                    config.name = value;
+                } else if (key == "l1_size") {
+                    config.hierarchyConfig.l1Config.size = std::stoi(value);
+                } else if (key == "l1_assoc") {
+                    config.hierarchyConfig.l1Config.associativity = std::stoi(value);
+                } else if (key == "l2_size") {
+                    int l2Size = std::stoi(value);
+                    if (l2Size > 0) {
+                        if (!config.hierarchyConfig.l2Config) {
+                            config.hierarchyConfig.l2Config = CacheConfig{};
+                        }
+                        config.hierarchyConfig.l2Config->size = l2Size;
+                    }
+                } else if (key == "l2_assoc") {
+                    int l2Assoc = std::stoi(value);
+                    if (!config.hierarchyConfig.l2Config) {
+                        config.hierarchyConfig.l2Config = CacheConfig{};
+                    }
+                    config.hierarchyConfig.l2Config->associativity = l2Assoc;
+                } else if (key == "block_size") {
+                    int blockSize = std::stoi(value);
+                    config.hierarchyConfig.l1Config.blockSize = blockSize;
+                    if (config.hierarchyConfig.l2Config) {
+                        config.hierarchyConfig.l2Config->blockSize = blockSize;
+                    }
+                } else if (key == "prefetch_enabled") {
+                    bool prefEnabled = (value == "true");
+                    config.hierarchyConfig.l1Config.prefetchEnabled = prefEnabled;
+                    if (config.hierarchyConfig.l2Config) {
+                        config.hierarchyConfig.l2Config->prefetchEnabled = prefEnabled;
+                    }
+                    config.hierarchyConfig.useStridePrediction = prefEnabled;
+                    config.hierarchyConfig.useAdaptivePrefetching = prefEnabled;
+                } else if (key == "prefetch_distance") {
+                    int prefDist = std::stoi(value);
+                    config.hierarchyConfig.l1Config.prefetchDistance = prefDist;
+                    if (config.hierarchyConfig.l2Config) {
+                        config.hierarchyConfig.l2Config->prefetchDistance = prefDist;
+                    }
+                } else {
+                    // Store any other parameters in extraOptions
+                    config.extraOptions[key] = value;
                 }
-                config.hierarchyConfig.useStridePrediction = prefEnabled;
-                config.hierarchyConfig.useAdaptivePrefetching = prefEnabled;
-            } else if (key == "prefetch_distance") {
-                int prefDist = std::stoi(value);
-                config.hierarchyConfig.l1Config.prefetchDistance = prefDist;
-                if (config.hierarchyConfig.l2Config) {
-                    config.hierarchyConfig.l2Config->prefetchDistance = prefDist;
-                }
-            } else if (key == "name") {
-                config.name = value;
-            } else {
-                // Store any other parameters in extraOptions
-                config.extraOptions[key] = value;
             }
         }
     }
     
+    // Set default values for prefetching if not specified
+    if (config.hierarchyConfig.l1Config.prefetchDistance == 0) {
+        config.hierarchyConfig.l1Config.prefetchDistance = 1;
+    }
+    
     // Ensure L2 has same block size as L1 if present
     if (config.hierarchyConfig.l2Config) {
-        config.hierarchyConfig.l2Config->blockSize = config.hierarchyConfig.l1Config.blockSize;
+        if (config.hierarchyConfig.l2Config->blockSize == 0) {
+            config.hierarchyConfig.l2Config->blockSize = config.hierarchyConfig.l1Config.blockSize;
+        }
+        if (config.hierarchyConfig.l2Config->prefetchDistance == 0) {
+            config.hierarchyConfig.l2Config->prefetchDistance = 1;
+        }
     }
     
     return config;

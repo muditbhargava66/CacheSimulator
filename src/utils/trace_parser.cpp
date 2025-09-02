@@ -194,12 +194,30 @@ TraceFormat TraceParser::detectFormat() {
 ParseResult TraceParser::parseLine(std::string_view line) {
     std::string lineStr(line);
     std::istringstream iss(lineStr);
-    std::string accessType;
-    std::string addressStr;
+    std::string token1, token2, token3;
     
-    // Parse the access type and address
-    if (!(iss >> accessType >> addressStr)) {
+    // Try to parse all tokens
+    iss >> token1;
+    if (!iss) {
         return ParseErrorType::UnknownError;
+    }
+    
+    iss >> token2;
+    if (!iss) {
+        return ParseErrorType::UnknownError;
+    }
+    
+    // Check if there's a third token (multiprocessor format)
+    std::string accessType, addressStr;
+    if (iss >> token3) {
+        // Three tokens: processor_id access_type address
+        // token1 = processor_id (ignored for now)
+        accessType = token2;
+        addressStr = token3;
+    } else {
+        // Two tokens: access_type address
+        accessType = token1;
+        addressStr = token2;
     }
     
     // Validate access type
