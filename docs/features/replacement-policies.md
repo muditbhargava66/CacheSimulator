@@ -16,7 +16,7 @@ The Cache Simulator supports multiple cache replacement policies through a plugg
 - **Best for**: Streaming workloads with no reuse
 - **Configuration**: `"replacementPolicy": "FIFO"`
 
-### NRU (Not Recently Used) - New in v1.2.0
+### NRU (Not Recently Used)
 - **Description**: Uses reference bits to track recent usage
 - **Implementation**: Periodically clears reference bits
 - **Best for**: Workloads with mixed access patterns

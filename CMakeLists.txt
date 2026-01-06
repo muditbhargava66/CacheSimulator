@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(CacheSimulator VERSION 1.2.2 LANGUAGES CXX)
+project(CacheSimulator VERSION 1.3.0 LANGUAGES CXX)
 
 # Set C++20 as the required standard (required for designated initializers)
 set(CMAKE_CXX_STANDARD 20)
@@ -40,11 +40,13 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/src/core
     ${PROJECT_SOURCE_DIR}/src/utils
+    ${PROJECT_SOURCE_DIR}/src/models
 )
 
 # Define source files
 file(GLOB_RECURSE CORE_SOURCES "src/core/*.cpp")
 file(GLOB_RECURSE UTILS_SOURCES "src/utils/*.cpp")
+file(GLOB_RECURSE MODELS_SOURCES "src/models/*.cpp")
 file(GLOB MAIN_SOURCES "src/main.cpp")
 
 # Explicitly add new v1.1.0 and v1.2.0 source files to ensure they're included
@@ -57,13 +59,14 @@ list(APPEND CORE_SOURCES "src/core/multiprocessor/interconnect.cpp")
 # Define header files
 file(GLOB_RECURSE CORE_HEADERS "src/core/*.h")
 file(GLOB_RECURSE UTILS_HEADERS "src/utils/*.h")
+file(GLOB_RECURSE MODELS_HEADERS "src/models/*.h")
 
 # Create a list of all sources
-set(ALL_SOURCES ${CORE_SOURCES} ${UTILS_SOURCES} ${MAIN_SOURCES})
-set(ALL_HEADERS ${CORE_HEADERS} ${UTILS_HEADERS})
+set(ALL_SOURCES ${CORE_SOURCES} ${UTILS_SOURCES} ${MODELS_SOURCES} ${MAIN_SOURCES})
+set(ALL_HEADERS ${CORE_HEADERS} ${UTILS_HEADERS} ${MODELS_HEADERS})
 
 # Define library for tests to link against
-add_library(cachesim_lib STATIC ${CORE_SOURCES} ${UTILS_SOURCES})
+add_library(cachesim_lib STATIC ${CORE_SOURCES} ${UTILS_SOURCES} ${MODELS_SOURCES})
 
 # Link against threads library for parallel processing
 find_package(Threads REQUIRED)
@@ -113,6 +116,16 @@ foreach(TEST_SOURCE ${UTILS_TEST_SOURCES})
     target_link_libraries(${TEST_NAME} cachesim_lib)
     set_target_properties(${TEST_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/unit/utils)
     add_test(NAME unit_utils_${TEST_NAME} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/unit/utils/${TEST_NAME})
+endforeach()
+
+# Add unit tests - Models
+file(GLOB MODELS_TEST_SOURCES "tests/unit/models/*.cpp")
+foreach(TEST_SOURCE ${MODELS_TEST_SOURCES})
+    get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
+    add_executable(${TEST_NAME} ${TEST_SOURCE})
+    target_link_libraries(${TEST_NAME} cachesim_lib)
+    set_target_properties(${TEST_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/unit/models)
+    add_test(NAME unit_models_${TEST_NAME} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/unit/models/${TEST_NAME})
 endforeach()
 
 # Add integration tests

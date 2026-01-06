@@ -22,7 +22,6 @@
 #include <queue>
 #include <vector>
 
-
 namespace cachesim {
 
 /**
@@ -243,7 +242,7 @@ public:
 
     case InterconnectType::Ring:
     case InterconnectType::Torus:
-      // TODO: Implement ring and torus topologies
+      // FUTURE: Ring and torus topologies - currently falls through to bus
       return std::make_unique<BusInterconnect>(numProcessors, baseLatency, 64);
 
     default:

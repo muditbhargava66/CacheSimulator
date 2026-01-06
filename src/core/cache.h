@@ -24,9 +24,9 @@
 #include <variant>
 #include <vector>
 
-
 #include "cache_block.h"
 #include "mesi_protocol.h"
+#include "models/power_model.h"
 #include "replacement_policy.h"
 #include "stream_buffer.h"
 #include "stride_predictor.h"
@@ -240,6 +240,43 @@ private:
   int writeThroughs; // v1.1.0 - count of write-through operations
   std::array<int, 4> missTypeStats; // Counts for each type of miss
 
+  // v1.3.0 - Power and Area Modeling
+  std::unique_ptr<PowerModel> powerModel_;
+
+public:
+  // v1.3.0 - Power modeling methods
+  void enablePowerModeling(const PowerConfig &config) {
+    powerModel_ = std::make_unique<PowerModel>(config);
+  }
+
+  [[nodiscard]] bool isPowerModelEnabled() const {
+    return powerModel_ && powerModel_->isEnabled();
+  }
+
+  [[nodiscard]] PowerStats getPowerStats() const {
+    if (powerModel_)
+      return powerModel_->getStats();
+    return PowerStats{};
+  }
+
+  [[nodiscard]] std::string getPowerReport() const {
+    if (powerModel_)
+      return powerModel_->generateReport();
+    return "";
+  }
+
+  void updatePowerSimulationTime(double elapsedNs) {
+    if (powerModel_)
+      powerModel_->updateSimulationTime(elapsedNs);
+  }
+
+  // Called internally on each access
+  void recordPowerAccess(bool isWrite, bool isHit) {
+    if (powerModel_)
+      powerModel_->recordAccess(isWrite, isHit);
+  }
+
+private:
   // Private cache operations
   void writeBack(uint32_t address, Cache *nextLevel);
   void writeThrough(uint32_t address, Cache *nextLevel); // v1.1.0

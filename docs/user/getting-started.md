@@ -1,108 +1,120 @@
-# Getting Started with Cache Simulator v1.2.2
+# Getting Started
 
-## Installation
+## Prerequisites
 
-### Prerequisites
 - C++20 compatible compiler (GCC 10+, Clang 10+, MSVC 2019+)
 - CMake 3.14 or higher
 - Make, Ninja, or MSBuild
 
-### Building from Source
+## Installation
 
-#### Linux/macOS
+### Linux/macOS
+
 ```bash
 git clone https://github.com/muditbhargava66/CacheSimulator.git
 cd CacheSimulator
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build . -j$(nproc)
-./bin/cachesim --version
 ```
 
-#### Windows (PowerShell)
+### Windows (PowerShell)
+
 ```powershell
 git clone https://github.com/muditbhargava66/CacheSimulator.git
 cd CacheSimulator
 .\build.ps1
-.\build\bin\cachesim.exe --version
 ```
 
-### Quick Build Scripts
+### Verify Installation
 
-Platform-specific build scripts are provided:
-
-- **Linux/Unix:** `./build.sh`
-- **macOS:** `./build_macos.sh`
-- **Windows:** `.\build.ps1` or `.\scripts\build_all.ps1`
+```bash
+./build/bin/cachesim --version
+# Output: Cache Simulator v1.3.0
+```
 
 ## Basic Usage
 
-### Simple Simulation
+### Create a Trace File
 
-Create a trace file `example.trace`:
+Create `example.trace`:
+
 ```
-# Simple memory trace
+# Memory access trace
 R 0x1000
 W 0x1004
 R 0x1008
 W 0x100C
+R 0x1000  # Cache hit
 ```
 
-Run the simulation:
-```bash
-./bin/cachesim example.trace
-```
-
-### Command Line Options
+### Run Simulation
 
 ```bash
-# Show help
-./bin/cachesim --help
+# Default configuration
+./build/bin/cachesim example.trace
 
-# Run with visualization
-./bin/cachesim --visualize example.trace
+# With visualization
+./build/bin/cachesim --vis example.trace
 
-# Enable victim cache
-./bin/cachesim --victim-cache example.trace
-
-# Run benchmark comparison
-./bin/cachesim --benchmark example.trace
-
-# Export results to CSV
-./bin/cachesim --export results.csv example.trace
+# With power analysis
+./build/bin/cachesim --power example.trace
 ```
 
-### Configuration File
+### Command Line Parameters
+
+```bash
+./cachesim [OPTIONS] <trace_file>
+
+Options:
+  -h, --help              Show help message
+  -v, --version           Show version
+  -c, --config <file>     Use JSON configuration file
+  --vis                   Enable cache visualization
+  --power                 Enable power analysis
+  --tech-node <nm>        Technology node (7, 14, 22, 32, 45)
+```
+
+## Quick Configuration
+
+### Using Command Line
+
+```bash
+# Custom cache parameters
+./cachesim 64 32768 4 262144 8 1 4 trace.txt
+#         BS  L1   A1  L2   A2  P  D
+# BS = Block Size, A1/A2 = Associativity, P = Prefetch, D = Distance
+```
+
+### Using JSON Config
 
 Create `config.json`:
+
 ```json
 {
   "l1": {
     "size": 32768,
     "associativity": 4,
     "blockSize": 64,
-    "replacementPolicy": "NRU"
+    "replacementPolicy": "LRU"
   },
   "l2": {
     "size": 262144,
     "associativity": 8,
     "blockSize": 64
-  },
-  "victimCache": {
-    "enabled": true,
-    "size": 8
   }
 }
 ```
 
-Run with configuration:
+Run with config:
+
 ```bash
-./bin/cachesim --config config.json example.trace
+./cachesim --config config.json trace.txt
 ```
 
 ## Next Steps
 
-- Read the [User Guide](user-guide.md) for detailed usage instructions
-- Explore [Configuration Options](configuration.md) for advanced settings
-- Check out [Examples](examples.md) for common use cases
-- Review [v1.2.0 Features](../features/v1.2.0-features.md) for new capabilities
+- [User Guide](user-guide.md) - Complete tutorial
+- [Configuration](configuration.md) - All configuration options
+- [CLI Reference](cli-reference.md) - Full command reference
+- [Examples](examples.md) - More usage examples
