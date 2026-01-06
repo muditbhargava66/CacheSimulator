@@ -2,8 +2,8 @@
 
 # 🚀 Cache Simulator
 
-![Version](https://img.shields.io/badge/version-1.2.1-blue)
-![C++17](https://img.shields.io/badge/C%2B%2B-17-orange)
+![Version](https://img.shields.io/badge/version-1.2.2-blue)
+![C++20](https://img.shields.io/badge/C%2B%2B-20-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)
@@ -21,7 +21,14 @@
 
 </div>
 
-## ✨ What's New in v1.2.0
+## ✨ What's New in v1.2.2
+
+- **🪟 Windows Support**: Full cross-platform compatibility with PowerShell build scripts
+- **🐛 Bug Fixes**: Fixed replacement policy parsing for JSON/INI configs (FIFO, Random, PLRU now work)
+- **💬 Inline Comments**: Trace files now support comments at end of lines (`r 0x1000 # comment`)
+- **📄 Enhanced Docs**: Comprehensive Windows platform guide
+
+### Previous: v1.2.0 Highlights
 
 - **🔄 NRU Replacement Policy**: Efficient Not Recently Used implementation with reference bit tracking
 - **💾 Victim Cache**: Reduces conflict misses by up to 25% with configurable fully-associative cache
@@ -29,7 +36,6 @@
 - **⚡ Parallel Processing**: Multi-threaded simulation with up to 4x speedup on 8-core systems
 - **🖥️ Multi-Processor Support**: Complete MESI coherence protocol with directory-based tracking
 - **📊 Statistical Visualization**: Built-in ASCII charts including line graphs, pie charts, and heatmaps
-- **🔧 Enhanced Tools**: Cache analyzer and performance comparison utilities
 
 ## 🎯 Key Features
 
@@ -63,12 +69,13 @@
 ## 🚀 Quick Start
 
 ### Prerequisites
-- C++17 compatible compiler (GCC 7+, Clang 5+, MSVC 19.14+)
+- C++20 compatible compiler (GCC 10+, Clang 10+, MSVC 2019+)
 - CMake 3.14+ or GNU Make
 - Optional: Python 3.6+ for visualization scripts
 
 ### Installation
 
+#### Linux / macOS (Bash)
 ```bash
 # Clone the repository
 git clone https://github.com/muditbhargava66/CacheSimulator.git
@@ -79,9 +86,29 @@ mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build . -j$(nproc)
 
-# Or build with Make
-make -j$(nproc)
+# Or use the build script
+./build.sh
 ```
+
+#### Windows (PowerShell)
+```powershell
+# Clone the repository
+git clone https://github.com/muditbhargava66/CacheSimulator.git
+cd CacheSimulator
+
+# Use the PowerShell build script
+.\build.ps1
+
+# Or build manually
+mkdir build; cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . --parallel
+
+# Run tests
+ctest --output-on-failure
+```
+
+> **📖 See [docs/WINDOWS.md](docs/WINDOWS.md) for detailed Windows instructions.**
 
 ### Basic Usage
 
@@ -297,7 +324,7 @@ If you use this simulator in your research, please cite:
 @software{CacheSimulator2025,
   author = {Mudit Bhargava},
   title = {Cache Simulator: A C++17 Cache and Memory Hierarchy Simulator},
-  version = {1.2.1},
+  version = {1.2.2},
   year = {2025},
   url = {https://github.com/muditbhargava66/CacheSimulator}
 }
@@ -332,7 +359,7 @@ This simulator is ideal for:
 📫 **Contact**: [@muditbhargava66](https://github.com/muditbhargava66)
 🐛 **Report Issues**: [Issue Tracker](https://github.com/muditbhargava66/CacheSimulator/issues)
   
-© 2025 Mudit Bhargava. [MIT License](LICENSE)  
+© 2026 Mudit Bhargava. [MIT License](LICENSE)  
 <!-- Copyright symbol using HTML entity for better compatibility -->
 
 </div>

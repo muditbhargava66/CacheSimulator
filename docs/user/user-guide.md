@@ -76,12 +76,17 @@ l1Config.blockSize = 64;  // Standard x86 cache line
 
 ### Creating Trace Files
 
-Trace files contain memory access patterns:
+Trace files contain memory access patterns. Comments are supported both as full lines and inline:
 
 ```
-r 0x1000    # Read from address 0x1000
+# This is a full-line comment
+r 0x1000    # Read from address 0x1000 (inline comment)
 w 0x2000    # Write to address 0x2000
 r 0x1040    # Read from address 0x1040
+
+# Multi-processor format (processor_id access_type address)
+0 r 0x1000  # Processor 0 reads
+1 w 0x2000  # Processor 1 writes
 ```
 
 Generate traces programmatically:

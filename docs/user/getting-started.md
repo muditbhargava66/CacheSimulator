@@ -1,38 +1,39 @@
-# Getting Started with Cache Simulator v1.2.0
+# Getting Started with Cache Simulator v1.2.2
 
 ## Installation
 
 ### Prerequisites
-- C++17 compatible compiler (GCC 7+, Clang 5+, MSVC 2017+)
+- C++20 compatible compiler (GCC 10+, Clang 10+, MSVC 2019+)
 - CMake 3.14 or higher
-- Make or Ninja build system
+- Make, Ninja, or MSBuild
 
 ### Building from Source
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/muditbhargava66/CacheSimulator.git
-   cd CacheSimulator
-   ```
+#### Linux/macOS
+```bash
+git clone https://github.com/muditbhargava66/CacheSimulator.git
+cd CacheSimulator
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . -j$(nproc)
+./bin/cachesim --version
+```
 
-2. **Build the project:**
-   ```bash
-   mkdir build && cd build
-   cmake -DCMAKE_BUILD_TYPE=Release ..
-   make -j$(nproc)
-   ```
-
-3. **Verify installation:**
-   ```bash
-   ./bin/cachesim --version
-   ```
+#### Windows (PowerShell)
+```powershell
+git clone https://github.com/muditbhargava66/CacheSimulator.git
+cd CacheSimulator
+.\build.ps1
+.\build\bin\cachesim.exe --version
+```
 
 ### Quick Build Scripts
 
-For convenience, platform-specific build scripts are provided:
+Platform-specific build scripts are provided:
 
-- **macOS:** `./build_macos.sh`
 - **Linux/Unix:** `./build.sh`
+- **macOS:** `./build_macos.sh`
+- **Windows:** `.\build.ps1` or `.\scripts\build_all.ps1`
 
 ## Basic Usage
 

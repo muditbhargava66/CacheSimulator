@@ -11,7 +11,7 @@ else
     NUM_CORES=$(nproc 2>/dev/null || echo 4)
 fi
 
-echo "Building Cache Simulator v1.1.0"
+echo "Building Cache Simulator v1.2.2"
 echo "Detected $NUM_CORES CPU cores"
 
 # Create build directory if it doesn't exist

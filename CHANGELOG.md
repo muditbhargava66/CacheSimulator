@@ -5,6 +5,46 @@ All notable changes to the Cache Simulator project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-01-06
+
+### Added
+- **Windows Platform Documentation**: Comprehensive guide for building and running on Windows
+  - Build instructions for GCC, MSVC, and Clang
+  - Known issues and solutions
+  - Troubleshooting guide
+- **Windows PowerShell Scripts**: Cross-platform build and benchmark scripts
+  - `build.ps1`: Simple build script for Windows
+  - `scripts/build_all.ps1`: Comprehensive build with options (Debug, Clean, Tests)
+  - `scripts/run_benchmarks.ps1`: Benchmark runner for Windows
+
+### Fixed
+- **Cross-Platform Header Includes**: Added missing standard library headers for strict compiler compliance
+  - `cache.h`: Added `#include <array>` for `std::array` usage
+  - `logger.h`: Added `#include <array>` for `LogLevelNames`
+  - `trace_utils.h`: Added `#include <functional>` for `std::function`
+  - `interconnect.h`: Added `#include <cmath>`, `<cstdint>`, `<memory>`, `<optional>`
+- **Windows Test Compatibility**: Fixed file locking issues in test files
+  - `visualization_test.cpp`: Used RAII scope blocks to ensure `ifstream` is closed before `filesystem::remove()`
+  - `cache_performance_test.cpp`: Used RAII scope blocks to ensure `TraceParser` releases file handle before cleanup
+  - All 13 tests now pass on Windows
+- **JSON Replacement Policy Parsing**: Fixed bug where JSON config files only recognized LRU and NRU policies
+  - Added support for FIFO, Random, and PLRU replacement policies in the JSON parser
+  - Both L1 and L2 cache configurations now correctly parse all replacement policy options
+- **INI Replacement Policy Parsing**: Added missing replacement policy support to INI config parser
+  - Both `replacement_policy` and `replacementPolicy` keys are now recognized
+- **Profiler Region Naming**: Fixed confusing region names that implied L1/L2 cache mapping
+  - Renamed to "Low/High Address Region" with explanatory comments
+  - Added documentation that regions are for pattern analysis, not cache behavior
+- **Trace Parser Inline Comments**: Fixed parser to handle inline comments (e.g., `r 0x1000 # comment`)
+  - Previously, text after `#` on the same line was incorrectly parsed as a processor ID
+  - Now properly strips inline comments before parsing
+- **C++20 Standard**: Updated CMakeLists.txt to require C++20 for designated initializer support
+
+### Technical Details
+- Designated initializers (`.field = value`) in multiprocessor code require C++20
+- The fixes ensure compatibility across Windows (GCC/MSVC), macOS (Clang/GCC), and Linux (GCC/Clang)
+- No functional changes - only build and compatibility improvements
+
 ## [1.2.1] - 2025-09-02
 
 ### Fixed
