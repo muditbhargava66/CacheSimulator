@@ -93,4 +93,21 @@ test_*.trace
 *_test_trace.txt
 perf_test_trace.txt
 
+# Development files
 TODO.md
+
+# PDF files (avoid committing email attachments, etc.)
+*.pdf
+
+# Python artifacts (if using Python tools)
+__pycache__/
+*.py[cod]
+.env
+venv/
+
+# Additional IDE files
+.clangd/
+.cache/clangd/
+
+# CMake user presets
+CMakeUserPresets.json
