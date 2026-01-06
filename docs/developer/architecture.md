@@ -11,6 +11,8 @@
    - [StridePredictor](#stridepredictor)
    - [AdaptivePrefetcher](#adaptiveprefetcher)
    - [MESI Protocol](#mesi-protocol)
+   - [Power Model](#power-model)
+   - [Area Model](#area-model)
 4. [Utility Components](#utility-components)
    - [TraceParser](#traceparser)
    - [Statistics](#statistics)
@@ -24,7 +26,7 @@
    - [Prefetching Algorithms](#prefetching-algorithms)
    - [Cache Coherence](#cache-coherence)
 6. [Implementation Details](#implementation-details)
-   - [C++17 Features](#c17-features)
+   - [C++20 Features](#c20-features)
    - [Performance Optimizations](#performance-optimizations)
    - [Code Organization](#code-organization)
 7. [Testing Strategy](#testing-strategy)
@@ -70,7 +72,7 @@ The design follows several key architectural principles:
 2. **Modularity**: Components can be developed, tested, and replaced independently.
 3. **Extensibility**: New policies, algorithms, and features can be easily added.
 4. **Configurability**: Extensive runtime customization options are available.
-5. **Modern C++ Design**: Leveraging C++17 features for safer, more expressive code.
+5. **Modern C++ Design**: Leveraging C++20 features for safer, more expressive code.
 
 ## Core Components
 
@@ -163,6 +165,29 @@ The `MESIProtocol` class implements the Modified-Exclusive-Shared-Invalid cache 
 - Tracks protocol state transition statistics
 
 The MESI protocol ensures coherent memory views in systems with multiple caches accessing shared memory.
+
+### Power Model
+
+The `PowerModel` class provides CACTI-inspired power and energy analysis:
+
+- Dynamic energy calculation (read/write per access)
+- Static leakage power with temperature scaling
+- Technology node support (7nm, 14nm, 22nm, 32nm, 45nm)
+- Energy-Delay Product (EDP) computation
+- Detailed power breakdown reporting
+
+The power model enables analysis of energy efficiency across different cache configurations.
+
+### Area Model
+
+The `AreaModel` class provides silicon area estimation:
+
+- Component-level area breakdown (data array, tag array, decoders, sense amps)
+- Technology-specific scaling factors
+- Cell efficiency metrics
+- Aspect ratio estimation
+
+Area modeling helps evaluate the physical implementation costs of cache designs.
 
 ## Utility Components
 
@@ -300,9 +325,9 @@ The protocol handles transitions between these states based on local and remote 
 
 ## Implementation Details
 
-### C++17 Features
+### C++20 Features
 
-The simulator leverages several C++17 features:
+The simulator leverages modern C++20 features:
 
 1. **std::optional**: Used for representing potentially missing values, such as nullable parameters and results.
 
@@ -316,13 +341,13 @@ The simulator leverages several C++17 features:
 
 6. **if constexpr**: Used for compile-time conditional code, improving performance in template functions.
 
-7. **Inline Variables**: Used for cleaner declaration of constants and static members.
+7. **Concepts and Constraints**: Used for clearer template interfaces and better error messages.
 
 8. **[[nodiscard]]**: Used to ensure return values are properly handled for functions that shouldn't be called for side effects.
 
-9. **constexpr if**: Used for compile-time conditional compilation without macros.
+9. **Ranges Library**: Used for cleaner iteration and transformation of collections.
 
-10. **auto return type deduction**: Simplifies function declarations while maintaining type safety.
+10. **Three-way Comparison (spaceship operator)**: Simplifies comparison operations.
 
 These features improve code safety, clarity, and performance.
 
@@ -412,22 +437,22 @@ Planned extensions include:
 
 1. **Additional Cache Levels**: Support for L3 cache and beyond.
 
-2. **Victim Cache**: Implementation of a small fully-associative victim cache.
+2. **Non-Inclusive Policies**: Support for non-inclusive and exclusive cache hierarchies.
 
-3. **Non-Inclusive Policies**: Support for non-inclusive and exclusive cache hierarchies.
+3. **Advanced Prefetching Algorithms**: Implementation of more sophisticated prefetchers like GHB and Markov predictors.
 
-4. **Replacement Policy Framework**: Pluggable framework for custom replacement policies.
+4. **GPU Cache Modeling**: Extensions for modeling GPU-specific cache architectures.
 
-5. **Advanced Prefetching Algorithms**: Implementation of more sophisticated prefetchers like GHB and Markov predictors.
+5. **NUMA Topology**: Modeling non-uniform memory access patterns.
 
-6. **GPU Cache Modeling**: Extensions for modeling GPU-specific cache architectures.
+6. **Graphical Interface**: Development of a GUI for visualization and configuration.
 
-7. **Multi-Core Simulation**: Support for simulating multiple cores with shared caches.
+7. **Dynamic Trace Generation**: Integration with instruction-level simulators.
 
-8. **Graphical Interface**: Development of a GUI for visualization and configuration.
+8. **Machine Learning Integration**: Using ML techniques for prefetching and replacement.
 
-9. **Dynamic Trace Generation**: Integration with instruction-level simulators.
+9. **Additional Coherence Protocols**: MSI, MOESI, and directory-based snooping.
 
-10. **Machine Learning Integration**: Using ML techniques for prefetching and replacement.
+10. **Network-on-Chip Modeling**: Detailed NoC simulation for many-core systems.
 
 These extensions will enhance the simulator's capabilities and keep it relevant for future research.

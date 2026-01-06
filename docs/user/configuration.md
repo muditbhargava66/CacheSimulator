@@ -102,6 +102,33 @@ The Cache Simulator uses JSON configuration files for advanced settings.
 }
 ```
 
+#### Power and Area Modeling
+```json
+"power": {
+  "enabled": true,
+  "techNode": 45,
+  "vdd": 1.0,
+  "temperature": 350,
+  "frequency": 2e9
+}
+```
+
+**Power Configuration Options:**
+- **enabled**: Enable power/energy analysis (default: false)
+- **techNode**: Technology node in nm - 7, 14, 22, 32, 45 (default: 45)
+- **vdd**: Supply voltage in volts (default: tech-specific)
+- **temperature**: Operating temperature in Kelvin (default: 350)
+- **frequency**: Operating frequency in Hz (default: 2e9)
+
+**CLI Power Options:**
+```bash
+# Enable power analysis
+./cachesim --power traces/example.txt
+
+# Specify technology node
+./cachesim --power --tech-node 7 traces/example.txt
+```
+
 ## Example Configurations
 
 ### High-Performance Configuration

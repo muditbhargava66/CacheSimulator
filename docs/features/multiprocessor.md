@@ -1,6 +1,6 @@
 # Multi-processor Simulation
 
-The Cache Simulator v1.2.0 includes comprehensive multi-processor simulation capabilities with cache coherence protocols.
+The Cache Simulator includes comprehensive multi-processor simulation capabilities with cache coherence protocols.
 
 ## Overview
 
@@ -215,7 +215,7 @@ Current limitations:
 - MESI protocol only (MSI, MOESI planned)
 - Directory-based coherence (snooping planned)
 - Limited atomic operation set
-- No NUMA modeling (planned for v1.3.0)
+- No NUMA modeling (planned)
 
 ## Future Enhancements
 

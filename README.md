@@ -2,7 +2,7 @@
 
 # 🚀 Cache Simulator
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue)
+![Version](https://img.shields.io/badge/version-1.3.0-blue)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
@@ -13,31 +13,23 @@
 [![Open Issues](https://img.shields.io/github/issues/muditbhargava66/CacheSimulator)](https://github.com/muditbhargava66/CacheSimulator/issues)
 [![Stars](https://img.shields.io/github/stars/muditbhargava66/CacheSimulator)](https://github.com/muditbhargava66/CacheSimulator/stargazers)
 
-**A state-of-the-art cache and memory hierarchy simulator featuring advanced prefetching, multi-processor support, and comprehensive performance analysis tools.**
+**A state-of-the-art cache and memory hierarchy simulator featuring advanced prefetching, multi-processor support, power/area modeling, and comprehensive performance analysis tools.**
 
 ![Cache Simulator Banner](assets/github-banner-modern.svg)
 
-[**📖 Documentation**](docs/) | [**🚀 Quick Start**](#quick-start) | [**✨ Features**](#features) | [**📊 Benchmarks**](#benchmarks) | [**🤝 Contributing**](#contributing)
+[**Documentation**](docs/) | [**Quick Start**](#quick-start) | [**Features**](#key-features) | [**Benchmarks**](#benchmarks) | [**Contributing**](#contributing)
 
 </div>
 
-## ✨ What's New in v1.2.2
+## What's New in v1.3.0
 
-- **🪟 Windows Support**: Full cross-platform compatibility with PowerShell build scripts
-- **🐛 Bug Fixes**: Fixed replacement policy parsing for JSON/INI configs (FIFO, Random, PLRU now work)
-- **💬 Inline Comments**: Trace files now support comments at end of lines (`r 0x1000 # comment`)
-- **📄 Enhanced Docs**: Comprehensive Windows platform guide
+- **Power Modeling**: CACTI-inspired energy analysis (dynamic + leakage)
+- **Area Estimation**: Silicon footprint breakdown by component
+- **Technology Nodes**: Support for 7nm, 14nm, 22nm, 32nm, 45nm
+- **CLI Integration**: `--power` and `--tech-node` flags
+- **Visualization Fix**: ASCII-safe table rendering for cross-platform console
 
-### Previous: v1.2.0 Highlights
-
-- **🔄 NRU Replacement Policy**: Efficient Not Recently Used implementation with reference bit tracking
-- **💾 Victim Cache**: Reduces conflict misses by up to 25% with configurable fully-associative cache
-- **📝 Advanced Write Policies**: No-write-allocate and write combining buffer support
-- **⚡ Parallel Processing**: Multi-threaded simulation with up to 4x speedup on 8-core systems
-- **🖥️ Multi-Processor Support**: Complete MESI coherence protocol with directory-based tracking
-- **📊 Statistical Visualization**: Built-in ASCII charts including line graphs, pie charts, and heatmaps
-
-## 🎯 Key Features
+## Key Features
 
 ### Cache Architecture
 - **Flexible Configuration**: Customizable L1/L2/L3 cache hierarchies
@@ -46,7 +38,13 @@
 - **Victim Cache**: Configurable 4-16 entry fully-associative cache
 - **Block Sizes**: 32B to 256B configurable
 
-### Prefetching & Prediction
+### Power and Area Modeling
+- **Dynamic Energy**: Per-access read/write energy (pJ)
+- **Leakage Power**: Temperature-scaled static power (mW)
+- **Area Breakdown**: Data array, tag array, decoder, sense amp, routing
+- **Technology Nodes**: 7nm to 45nm process support
+
+### Prefetching and Prediction
 - **Stream Buffer Prefetching**: Sequential access optimization
 - **Stride Predictor**: Pattern-based prefetching with confidence tracking
 - **Adaptive Prefetching**: Dynamic strategy selection based on workload
@@ -66,49 +64,31 @@
 - **Parallel Benchmarking**: Compare multiple configurations simultaneously
 - **Trace Analysis Tools**: Pattern detection and optimization recommendations
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - C++20 compatible compiler (GCC 10+, Clang 10+, MSVC 2019+)
 - CMake 3.14+ or GNU Make
-- Optional: Python 3.6+ for visualization scripts
 
 ### Installation
 
-#### Linux / macOS (Bash)
+#### Linux / macOS
 ```bash
-# Clone the repository
 git clone https://github.com/muditbhargava66/CacheSimulator.git
 cd CacheSimulator
-
-# Build with CMake (recommended)
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build . -j$(nproc)
-
-# Or use the build script
-./build.sh
 ```
 
 #### Windows (PowerShell)
 ```powershell
-# Clone the repository
 git clone https://github.com/muditbhargava66/CacheSimulator.git
 cd CacheSimulator
-
-# Use the PowerShell build script
 .\build.ps1
-
-# Or build manually
-mkdir build; cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-cmake --build . --parallel
-
-# Run tests
-ctest --output-on-failure
 ```
 
-> **📖 See [docs/WINDOWS.md](docs/WINDOWS.md) for detailed Windows instructions.**
+> See [docs/WINDOWS.md](docs/WINDOWS.md) for detailed Windows instructions.
 
 ### Basic Usage
 
@@ -122,7 +102,10 @@ ctest --output-on-failure
 # BS=Block Size, L1=L1 Size, A1=L1 Assoc, L2=L2 Size, A2=L2 Assoc, P=Prefetch, D=Distance
 
 # Run with visualization
-./build/bin/cachesim --visualize --charts traces/workload.txt
+./build/bin/cachesim --vis traces/workload.txt
+
+# Enable power analysis
+./build/bin/cachesim --power --tech-node 22 traces/workload.txt
 
 # Enable victim cache
 ./build/bin/cachesim --victim-cache traces/workload.txt
@@ -159,6 +142,10 @@ Create a JSON configuration file:
     "enabled": true,
     "size": 8
   },
+  "power": {
+    "enabled": true,
+    "techNode": 45
+  },
   "multiprocessor": {
     "numCores": 4,
     "coherence": "MESI",
@@ -172,136 +159,99 @@ Run with configuration:
 ./build/bin/cachesim -c config.json traces/workload.txt
 ```
 
-## 📊 Benchmarks
+## Benchmarks
 
-### Performance Improvements (v1.2.0)
+### Performance Results
 
-| Feature | Improvement | Benchmark |
-|---------|-------------|-----------|
-| Parallel Processing | 3.8x speedup | 8-core Intel i7-9700K |
-| Victim Cache | 25% fewer conflict misses | SPEC CPU2017 |
+| Configuration | L1 Hit Rate | L2 Hit Rate | Overall | Avg Latency | Speedup |
+|--------------|-------------|-------------|---------|-------------|---------|
+| Basic L1 (32KB) | 85.2% | - | 85.2% | 12.5 cycles | 1.0x |
+| L1+L2 (32KB+256KB) | 85.2% | 78.3% | 96.7% | 4.8 cycles | 2.6x |
+| With Prefetching | 89.1% | 82.5% | 98.1% | 3.2 cycles | 3.9x |
+| NRU + Victim Cache | 87.8% | 79.1% | 97.5% | 3.5 cycles | 3.6x |
+| High-Performance | 91.3% | 85.2% | 98.8% | 2.9 cycles | 4.3x |
+
+### Feature Impact
+
+| Feature | Improvement | Notes |
+|---------|-------------|-------|
+| Parallel Processing | 3.8x speedup | 8-core system |
+| Victim Cache | 25% fewer conflict misses | Direct-mapped L1 |
 | NRU Policy | 15% faster than LRU | Large working sets |
-| Write Combining | 40% reduction in memory traffic | Write-heavy workloads |
+| Prefetching | 40% miss reduction | Sequential workloads |
 
-### Sample Results
-
-```
-Configuration          L1 Hit%   L2 Hit%   Overall%   Avg Time   Speedup
----------------------------------------------------------------------------
-Basic L1 (32KB)         85.2      0.0       85.2       12.5       1.0x
-L1+L2 (32KB+256KB)      85.2      78.3      96.7       4.8        2.6x
-With Prefetching        89.1      82.5      98.1       3.2        3.9x
-NRU + Victim Cache      87.8      79.1      97.5       3.5        3.6x
-High-Performance        91.3      85.2      98.8       2.9        4.3x
-```
-
-## 🛠️ Tools & Utilities
+## Tools and Utilities
 
 ### Cache Analyzer
-Comprehensive trace analysis tool:
 ```bash
-./build/bin/tools/cache_analyzer -v -g traces/workload.txt
-
-# Output includes:
-# - Working set analysis
-# - Reuse distance distribution
-# - Access pattern classification
-# - Cache size recommendations
+./build/bin/cachesim --verbose traces/workload.txt
 ```
 
 ### Performance Comparison
-Compare multiple configurations:
 ```bash
-./build/bin/tools/performance_comparison -g -r traces/workload.txt
-
-# Features:
-# - Parallel simulation of configurations
-# - Visual comparison charts
-# - Automatic recommendations
-# - CSV export for further analysis
+# Compare multiple configurations
+./build/bin/cachesim -c config1.json traces/workload.txt
+./build/bin/cachesim -c config2.json traces/workload.txt
 ```
 
-### Trace Generator
-Create custom workloads:
-```bash
-./build/bin/tools/trace_generator -p matrix -n 10000 -o matrix.txt
-./build/bin/tools/trace_generator -p mixed --locality 0.8 -o mixed.txt
-```
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 CacheSimulator/
-├── src/                       # Source code
-│   ├── core/                  # Core simulation components
-│   │   ├── multiprocessor/    # Multi-processor simulation
-│   │   ├── cache.cpp/.h       # Cache implementation
+├── src/                         # Source code
+│   ├── core/                    # Core simulation components
+│   │   ├── multiprocessor/      # Multi-processor simulation
+│   │   ├── cache.cpp/.h         # Cache implementation
 │   │   ├── memory_hierarchy.cpp/.h
-│   │   ├── victim_cache.h     # Victim cache implementation
-│   │   ├── replacement_policy.h # Pluggable policies
-│   │   ├── write_policy.cpp/.h  # Write policies
-│   │   └── adaptive_prefetcher.cpp/.h
-│   ├── utils/                 # Utility classes
-│   │   ├── parallel_executor.h  # Parallel processing
-│   │   ├── visualization.h      # Statistical charts
-│   │   ├── trace_parser.cpp/.h
+│   │   ├── victim_cache.h       # Victim cache
+│   │   └── replacement_policy.h # Pluggable policies
+│   ├── models/                  # Power and area models
+│   │   ├── power_model.cpp/.h
+│   │   ├── area_model.cpp/.h
+│   │   └── power_constants.h
+│   ├── utils/                   # Utility classes
+│   │   ├── parallel_executor.h
+│   │   ├── visualization.h
 │   │   └── config_utils.cpp/.h
-│   └── main.cpp              # Main application entry point
-├── tests/                    # Organized test suite
-│   ├── unit/                 # Unit tests by component
-│   │   ├── core/            # Core component tests
-│   │   ├── policies/        # Policy tests
-│   │   └── utils/           # Utility tests
-│   ├── integration/          # End-to-end tests
-│   └── performance/          # Performance benchmarks
-├── docs/                     # Comprehensive documentation
-│   ├── user/                # User guides and tutorials
-│   ├── developer/           # Development documentation
-│   └──  features/            # Feature-specific docs
-├── tools/                   # Analysis and generation tools
-├── configs/                 # Configuration examples
-└── traces/                  # Example trace files
+│   └── main.cpp                 # Main entry point
+├── tests/                       # Test suite
+│   ├── unit/                    # Unit tests
+│   ├── integration/             # Integration tests
+│   └── performance/             # Performance benchmarks
+├── docs/                        # Documentation
+│   ├── user/                    # User guides
+│   ├── developer/               # Developer docs
+│   └── features/                # Feature documentation
+├── configs/                     # Configuration examples
+└── traces/                      # Example trace files
 ```
 
+## Testing
 
-## 📖 Documentation
-
-- **[Getting Started](docs/user/getting-started.md)** - Installation and basic usage
-- **[User Guide](docs/user/user-guide.md)** - Complete user manual  
-- **[Configuration Guide](docs/user/configuration.md)** - Configuration options and examples
-- **[CLI Reference](docs/user/cli-reference.md)** - Command-line options
-- **[Architecture](docs/developer/architecture.md)** - System design and implementation
-- **[Contributing](docs/developer/contributing.md)** - Development guidelines
-- **[v1.2.0 Features](docs/features/v1.2.0-features.md)** - New features and capabilities
-- **[Examples](docs/user/examples.md)** - Usage examples and case studies
-
-📚 **See [docs/README.md](docs/README.md) for complete documentation index.**
-
-## 🧪 Testing
-
-Run the test suite:
 ```bash
-# Run all tests
 cd build
-ctest
+ctest --output-on-failure
 
-# Run specific test category
+# Run specific test categories
 ctest -R unit
-ctest -R validation
-
-# Run specific feature tests
-ctest -R nru_policy_test
-ctest -R victim_cache_test
-ctest -R parallel_processing_test
-ctest -R visualization_test
-
-# Run performance tests
+ctest -R integration
 ctest -R performance
 ```
 
-## 🤝 Contributing
+## Documentation
 
-We welcome contributions! Please see our [Contributing Guide](docs/developer/contributing.md) for details.
+See [docs/README.md](docs/README.md) for complete documentation index:
+
+- [Getting Started](docs/user/getting-started.md) - Installation and basic usage
+- [User Guide](docs/user/user-guide.md) - Complete user manual
+- [Configuration](docs/user/configuration.md) - Configuration options
+- [CLI Reference](docs/user/cli-reference.md) - Command-line options
+- [Architecture](docs/developer/architecture.md) - System design
+- [API Reference](docs/developer/api-reference.md) - Code API
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](contributing.md) for details.
 
 ### How to Contribute
 1. Fork the repository
@@ -311,26 +261,26 @@ We welcome contributions! Please see our [Contributing Guide](docs/developer/con
 5. Open a Pull Request
 
 ### Code Style
-- Follow the existing C++17 style
+- Follow the existing C++20 style
 - Use meaningful variable names
 - Add comments for complex logic
 - Include unit tests for new features
 
-## 📚 Citation
+## Citation
 
 If you use this simulator in your research, please cite:
 
 ```bibtex
 @software{CacheSimulator2025,
   author = {Mudit Bhargava},
-  title = {Cache Simulator: A C++17 Cache and Memory Hierarchy Simulator},
-  version = {1.2.2},
+  title = {Cache Simulator: A C++20 Cache and Memory Hierarchy Simulator},
+  version = {1.3.0},
   year = {2025},
   url = {https://github.com/muditbhargava66/CacheSimulator}
 }
 ```
 
-## 📊 Performance Tips
+## Performance Tips
 
 1. **For Large Traces**: Use parallel processing with `-p` flag
 2. **For Conflict Misses**: Enable victim cache with `--victim-cache`
@@ -338,7 +288,7 @@ If you use this simulator in your research, please cite:
 4. **For Multi-Core**: Choose appropriate interconnect topology
 5. **For Best Performance**: Use release build with `-O3` optimization
 
-## 🎓 Educational Use
+## Educational Use
 
 This simulator is ideal for:
 - Computer Architecture courses

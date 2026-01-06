@@ -5,6 +5,67 @@ All notable changes to the Cache Simulator project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-01-07
+
+### Added
+- **Power and Area Modeling** (CACTI-inspired analytical models)
+  - `PowerModel` class for energy calculation
+    - Dynamic read/write energy per access (pJ)
+    - Static leakage power with temperature scaling (mW)
+    - Total energy accumulation during simulation (nJ)
+    - Energy-Delay Product (EDP) metric
+  - `AreaModel` class for silicon area estimation
+    - Component breakdown: data array, tag array, decoders, sense amps, routing
+    - Aspect ratio and layout geometry estimation
+    - Cell efficiency metrics
+  - Technology node support: 7nm, 14nm, 22nm, 32nm, 45nm
+  - Constants derived from CACTI 7.0 and published research
+
+- **CLI Integration**
+  - `--power` flag to enable power and energy analysis
+  - `--tech-node <nm>` flag to specify technology node (7, 14, 22, 32, 45)
+
+- **Documentation**
+  - New `docs/features/power-modeling.md` comprehensive feature guide
+  - Updated `docs/user/configuration.md` with power config options
+
+### Fixed
+- **Visualization Rendering on Windows**
+  - Replaced Unicode box-drawing characters (╔═║) with ASCII alternatives (+, -, |)
+  - Added `TABLE_WIDTH` constant for consistent table alignment
+  - Centered title row with proper padding
+  - Footer stats now use `std::setw` for exact column alignment
+
+### Changed
+- Updated version to 1.3.0
+- Updated C++ edition label to C++20
+
+### New Files
+- `src/models/power_constants.h` - Technology-specific parameters
+- `src/models/power_model.h/cpp` - Power and energy modeling
+- `src/models/area_model.h/cpp` - Area estimation
+- `tests/unit/models/power_area_test.cpp` - Comprehensive unit tests (14 test cases)
+- `docs/features/power-modeling.md` - Feature documentation
+
+### Technical Details
+- Bitline, wordline, decoder, and sense amplifier energy components
+- Temperature-dependent leakage with exponential scaling
+- 6T SRAM cell-based transistor count estimation
+- Peripheral circuit overhead modeling
+
+### Documentation Restructure
+- Redesigned `docs/` folder structure with 16 organized files
+- Created `docs/user/analysis.md` for performance analysis tools
+- Created `docs/developer/building.md` for build instructions
+- Created `docs/developer/api-reference.md` for code API
+- Created `docs/features/prefetching.md` for prefetching documentation
+- Removed version-specific `docs/features/v1.2.0-features.md` (content migrated)
+- Updated `docs/developer/architecture.md` with C++20 and Power/Area models
+- Removed emojis from all documentation headings
+- Updated README.md with clean formatting and power model section
+
+---
+
 ## [1.2.2] - 2026-01-06
 
 ### Added

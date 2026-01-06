@@ -44,6 +44,13 @@ cachesim [OPTIONS] <trace_file>
 |--------|-------------|
 | `-b, --benchmark` | Run performance benchmark |
 
+### Power Analysis Options
+
+| Option | Description |
+|--------|-------------|
+| `--power` | Enable power and energy analysis |
+| `--tech-node <nm>` | Specify technology node (7, 14, 22, 32, 45). Default: 45nm |
+
 ## Examples
 
 ### Basic Simulation
@@ -64,6 +71,15 @@ cachesim --visualize --charts --export results.csv trace.txt
 ### Benchmarking
 ```bash
 cachesim --benchmark --parallel trace.txt
+```
+
+### Power Analysis
+```bash
+# Enable power analysis with default 45nm technology
+cachesim --power trace.txt
+
+# Use 7nm technology node
+cachesim --power --tech-node 7 trace.txt
 ```
 
 ## Default Configuration

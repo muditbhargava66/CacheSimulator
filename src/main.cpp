@@ -147,35 +147,68 @@ createCacheStateVisualization(const std::vector<CacheBlockState> &blockStates,
     sortedBlocks.resize(maxBlocks);
   }
 
-  // Generate header
-  output << headerColor << "╔══════════════════ L" << cacheLevel
-         << " Cache State ═══════════════════╗" << resetColor << std::endl;
-  output << headerColor
-         << "║ Set │ Way │     Tag     │ Valid │ Dirty │   Address   │ Access "
-            "│ Pref ║"
-         << resetColor << std::endl;
-  output << headerColor
-         << "╠═════╪═════╪═════════════╪═══════╪═══════╪═════════════╪════════╪"
-            "══════╣"
-         << resetColor << std::endl;
+  // Use ASCII-safe box characters for Windows console compatibility
+  // These work in all terminals without encoding issues
+  const char *boxTL = "+"; // Top-left corner
+  const char *boxTR = "+"; // Top-right corner
+  const char *boxBL = "+"; // Bottom-left corner
+  const char *boxBR = "+"; // Bottom-right corner
+  const char *boxH = "-";  // Horizontal line
+  const char *boxV = "|";  // Vertical line
+  const char *boxT = "+";  // T-junction
+
+  // Fixed table width for consistent alignment (matches header row width)
+  const int TABLE_WIDTH = 77; // Total width including borders
+
+  // Generate top border
+  output << headerColor << boxTL;
+  for (int i = 0; i < TABLE_WIDTH - 2; i++)
+    output << boxH;
+  output << boxTR << resetColor << std::endl;
+
+  // Title row centered
+  std::string title = " L" + std::to_string(cacheLevel) + " Cache State ";
+  int titlePadLeft = (TABLE_WIDTH - 2 - static_cast<int>(title.length())) / 2;
+  int titlePadRight =
+      TABLE_WIDTH - 2 - static_cast<int>(title.length()) - titlePadLeft;
+  output << headerColor << boxV << std::string(titlePadLeft, ' ') << title
+         << std::string(titlePadRight, ' ') << boxV << resetColor << std::endl;
+
+  // Separator
+  output << headerColor << boxT;
+  for (int i = 0; i < TABLE_WIDTH - 2; i++)
+    output << boxH;
+  output << boxT << resetColor << std::endl;
+
+  // Column headers
+  output << headerColor << boxV
+         << " Set | Way |     Tag     | Valid | Dirty |   Address   | Access | "
+            "Pref "
+         << boxV << resetColor << std::endl;
+
+  // Separator
+  output << headerColor << boxT;
+  for (int i = 0; i < TABLE_WIDTH - 2; i++)
+    output << boxH;
+  output << boxT << resetColor << std::endl;
 
   // Generate rows for each valid cache block
   for (const auto &block : sortedBlocks) {
-    output << headerColor << "║ " << resetColor;
+    output << headerColor << boxV << " " << resetColor;
 
     // Set index (3 digits)
-    output << std::setw(3) << block.set << headerColor << " │ " << resetColor;
+    output << std::setw(3) << block.set << headerColor << " | " << resetColor;
 
     // Way (3 digits)
-    output << std::setw(3) << block.way << headerColor << " │ " << resetColor;
+    output << std::setw(3) << block.way << headerColor << " | " << resetColor;
 
     // Tag (11 characters, hex)
     output << addressColor << "0x" << std::hex << std::setw(9)
            << std::setfill('0') << block.tag << std::dec << std::setfill(' ')
-           << headerColor << " │ " << resetColor;
+           << headerColor << " | " << resetColor;
 
     // Valid bit
-    output << validColor << std::setw(5) << "Yes" << headerColor << " │ "
+    output << validColor << std::setw(5) << "Yes" << headerColor << " | "
            << resetColor;
 
     // Dirty bit
@@ -184,15 +217,15 @@ createCacheStateVisualization(const std::vector<CacheBlockState> &blockStates,
     } else {
       output << std::setw(5) << "No";
     }
-    output << headerColor << " │ " << resetColor;
+    output << headerColor << " | " << resetColor;
 
     // Address (11 characters, hex)
     output << addressColor << "0x" << std::hex << std::setw(9)
            << std::setfill('0') << block.address << std::dec
-           << std::setfill(' ') << headerColor << " │ " << resetColor;
+           << std::setfill(' ') << headerColor << " | " << resetColor;
 
     // Access count (6 digits)
-    output << std::setw(6) << block.accessCount << headerColor << " │ "
+    output << std::setw(6) << block.accessCount << headerColor << " | "
            << resetColor;
 
     // Prefetch indicator
@@ -201,64 +234,58 @@ createCacheStateVisualization(const std::vector<CacheBlockState> &blockStates,
     } else {
       output << std::setw(4) << "No";
     }
-    output << headerColor << " ║" << resetColor << std::endl;
+    output << headerColor << " " << boxV << resetColor << std::endl;
   }
 
   // Handle empty cache or show "..." if truncated
   if (sortedBlocks.empty()) {
-    output << headerColor << "║" << std::setw(75)
+    output << headerColor << boxV << std::setw(75)
            << "Cache is empty or all blocks are invalid"
-           << " ║" << resetColor << std::endl;
+           << " " << boxV << resetColor << std::endl;
   } else if (maxBlocks > 0 && blockStates.size() > maxBlocks) {
-    output << headerColor << "║" << std::setw(75)
+    output << headerColor << boxV << std::setw(TABLE_WIDTH - 3)
            << "... (showing first " + std::to_string(maxBlocks) + " blocks)"
-           << " ║" << resetColor << std::endl;
+           << " " << boxV << resetColor << std::endl;
   }
 
   // Footer with statistics
-  output << headerColor
-         << "╠═════════════════════════════════════════════════════════════════"
-            "══════════╣"
-         << resetColor << std::endl;
+  output << headerColor << boxT;
+  for (int i = 0; i < TABLE_WIDTH - 2; i++)
+    output << boxH;
+  output << boxT << resetColor << std::endl;
 
-  // Cache configuration
-  output << headerColor << "║ Config: " << resetColor << numSets << " sets × "
-         << associativity << " ways × " << blockSize << " bytes";
-  int padding = 63 - std::to_string(numSets).length() -
-                std::to_string(associativity).length() -
-                std::to_string(blockSize).length() - 20;
-  output << std::string(std::max(padding, 0), ' ') << headerColor << " ║"
-         << resetColor << std::endl;
-
-  // Valid blocks
-  output << headerColor << "║ Valid: " << resetColor << blockStates.size()
-         << "/" << (numSets * associativity) << " blocks (" << std::fixed
-         << std::setprecision(1)
-         << (blockStates.size() * 100.0 / (numSets * associativity)) << "%)";
-  padding = 75 - 9 - std::to_string(blockStates.size()).length() -
-            std::to_string(numSets * associativity).length() - 13;
-  output << std::string(std::max(padding, 0), ' ') << headerColor << " ║"
-         << resetColor << std::endl;
-
-  // Dirty blocks
+  // Build stats strings with fixed formatting
   size_t dirtyCount =
       std::count_if(blockStates.begin(), blockStates.end(),
                     [](const CacheBlockState &b) { return b.dirty; });
-  output << headerColor << "║ Dirty: " << resetColor << dirtyCount << "/"
-         << blockStates.size() << " blocks (" << std::fixed
-         << std::setprecision(1)
-         << (blockStates.empty() ? 0.0
-                                 : (dirtyCount * 100.0 / blockStates.size()))
-         << "%)";
-  padding = 75 - 9 - std::to_string(dirtyCount).length() -
-            std::to_string(blockStates.size()).length() - 13;
-  output << std::string(std::max(padding, 0), ' ') << headerColor << " ║"
+  std::ostringstream configStr, validStr, dirtyStr;
+  configStr << " Config: " << numSets << " sets x " << associativity
+            << " ways x " << blockSize << " bytes";
+  validStr << " Valid: " << blockStates.size() << "/"
+           << (numSets * associativity) << " blocks (" << std::fixed
+           << std::setprecision(1)
+           << (blockStates.size() * 100.0 / (numSets * associativity)) << "%)";
+  dirtyStr << " Dirty: " << dirtyCount << "/" << blockStates.size()
+           << " blocks (" << std::fixed << std::setprecision(1)
+           << (blockStates.empty() ? 0.0
+                                   : (dirtyCount * 100.0 / blockStates.size()))
+           << "%)";
+
+  // Output stats with proper right-alignment
+  output << headerColor << boxV << resetColor << std::left
+         << std::setw(TABLE_WIDTH - 2) << configStr.str() << headerColor << boxV
+         << resetColor << std::endl;
+  output << headerColor << boxV << resetColor << std::left
+         << std::setw(TABLE_WIDTH - 2) << validStr.str() << headerColor << boxV
+         << resetColor << std::endl;
+  output << headerColor << boxV << resetColor << std::left
+         << std::setw(TABLE_WIDTH - 2) << dirtyStr.str() << headerColor << boxV
          << resetColor << std::endl;
 
-  output << headerColor
-         << "╚═════════════════════════════════════════════════════════════════"
-            "══════════╝"
-         << resetColor << std::endl;
+  output << headerColor << boxBL;
+  for (int i = 0; i < TABLE_WIDTH - 2; i++)
+    output << boxH;
+  output << boxBR << resetColor << std::endl;
 
   return output.str();
 }
@@ -279,6 +306,8 @@ struct CommandLineOptions {
   size_t numThreads = 0;
   bool useVictimCache = false;
   bool showCharts = false;
+  bool showPowerStats = false;
+  uint32_t techNode = 45; // Default 45nm
 };
 
 // Parse command line arguments
@@ -310,6 +339,12 @@ std::optional<CommandLineOptions> parseCommandLine(int argc, char *argv[]) {
       options.useVictimCache = true;
     } else if (arg == "--charts") {
       options.showCharts = true;
+    } else if (arg == "--power") {
+      options.showPowerStats = true;
+    } else if (arg == "--tech-node") {
+      if (i + 1 < argc && std::isdigit(argv[i + 1][0])) {
+        options.techNode = std::stoi(argv[++i]);
+      }
     } else if (arg == "-e" || arg == "--export") {
       options.exportResults = true;
       if (i + 1 < argc && argv[i + 1][0] != '-') {
@@ -364,6 +399,11 @@ void printUsage(const std::string &programName) {
   std::cout << "  --victim-cache             Enable victim cache" << std::endl;
   std::cout << "  --charts                   Show statistical charts"
             << std::endl;
+  std::cout << "  --power                    Show power and energy analysis"
+            << std::endl;
+  std::cout << "  --tech-node <nm>           Technology node (7,14,22,32,45) "
+               "default:45"
+            << std::endl;
   std::cout << std::endl;
   std::cout << "If no configuration file is specified, the simulator uses:"
             << std::endl;
@@ -376,8 +416,8 @@ void printUsage(const std::string &programName) {
  * Display version information including build details
  */
 void printVersion() {
-  std::cout << "Cache Simulator v1.2.2" << std::endl;
-  std::cout << "C++17 Edition" << std::endl;
+  std::cout << "Cache Simulator v1.3.0" << std::endl;
+  std::cout << "C++20 Edition" << std::endl;
   std::cout << "Copyright (c) 2025 Mudit Bhargava" << std::endl;
   std::cout << "Build Date: " << __DATE__ << " " << __TIME__ << std::endl;
   std::cout << "Compiler: " <<
