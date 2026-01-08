@@ -27,10 +27,13 @@ Comprehensive documentation for the Cache Simulator.
 
 | Document | Description |
 |----------|-------------|
+| [L3 Cache](features/l3-cache.md) | Third-level cache with inclusive policy |
+| [Coherence Protocols](features/coherence-protocols.md) | MSI, MESI, MOESI protocol implementations |
+| [Interconnects](features/interconnects.md) | Bus, Crossbar, Mesh, Ring, Torus topologies |
 | [Power Modeling](features/power-modeling.md) | CACTI-inspired power and area analysis |
 | [Replacement Policies](features/replacement-policies.md) | LRU, FIFO, NRU, PLRU, Random |
 | [Victim Cache](features/victim-cache.md) | Victim cache implementation |
-| [Multiprocessor](features/multiprocessor.md) | MESI coherence and multi-core simulation |
+| [Multiprocessor](features/multiprocessor.md) | Multi-core simulation and coherence |
 | [Prefetching](features/prefetching.md) | Stream buffer and stride prefetching |
 
 ### Platform Documentation

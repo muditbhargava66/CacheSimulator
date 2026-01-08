@@ -2,8 +2,8 @@
  * @file interconnect.h
  * @brief Interconnect model for multi-processor communication
  * @author Mudit Bhargava
- * @date 2025-05-31
- * @version 1.2.0
+ * @date 2026-01-07
+ * @version 1.4.0
  *
  * This file implements various interconnect topologies for
  * multi-processor cache coherence communication.
@@ -216,6 +216,190 @@ private:
 };
 
 /**
+ * @class RingInterconnect
+ * @brief Ring topology interconnect
+ *
+ * Latency model: min(clockwise hops, counter-clockwise hops) * hopLatency
+ * Bidirectional ring for shortest path routing.
+ */
+class RingInterconnect : public InterconnectInterface {
+public:
+  RingInterconnect(uint32_t numProcessors, uint32_t hopLatency)
+      : numProcessors_(numProcessors), hopLatency_(hopLatency),
+        routers_(numProcessors) {}
+
+  uint32_t sendMessage(const InterconnectMessage &message) override {
+    uint32_t hops = calculateHops(message.sourceId, message.destId);
+    uint32_t latency = hops * hopLatency_;
+
+    // Deliver to destination
+    if (message.destId < numProcessors_) {
+      std::lock_guard<std::mutex> lock(routers_[message.destId].mutex);
+      InterconnectMessage msg = message;
+      msg.hopCount = hops;
+      routers_[message.destId].queue.push(msg);
+    }
+
+    totalMessages_.fetch_add(1);
+    totalHops_.fetch_add(hops);
+    return latency;
+  }
+
+  bool hasMessages(uint32_t processorId) const override {
+    if (processorId >= numProcessors_)
+      return false;
+    std::lock_guard<std::mutex> lock(routers_[processorId].mutex);
+    return !routers_[processorId].queue.empty();
+  }
+
+  std::optional<InterconnectMessage>
+  receiveMessage(uint32_t processorId) override {
+    if (processorId >= numProcessors_)
+      return std::nullopt;
+    std::lock_guard<std::mutex> lock(routers_[processorId].mutex);
+    if (routers_[processorId].queue.empty())
+      return std::nullopt;
+    auto msg = routers_[processorId].queue.front();
+    routers_[processorId].queue.pop();
+    return msg;
+  }
+
+  InterconnectStats getStats() const override {
+    uint64_t msgs = totalMessages_.load();
+    return {msgs, totalHops_.load() * hopLatency_, 0,
+            msgs > 0 ? static_cast<double>(totalHops_.load()) / msgs : 0.0,
+            0.0};
+  }
+
+  void resetStats() override {
+    totalMessages_ = 0;
+    totalHops_ = 0;
+  }
+
+private:
+  uint32_t numProcessors_;
+  uint32_t hopLatency_;
+
+  uint32_t calculateHops(uint32_t src, uint32_t dst) const {
+    if (src == dst)
+      return 0;
+    uint32_t clockwise =
+        (dst >= src) ? (dst - src) : (numProcessors_ - src + dst);
+    uint32_t counterClockwise = numProcessors_ - clockwise;
+    return std::min(clockwise, counterClockwise);
+  }
+
+  struct RouterNode {
+    std::queue<InterconnectMessage> queue;
+    mutable std::mutex mutex;
+  };
+
+  std::vector<RouterNode> routers_;
+  std::atomic<uint64_t> totalMessages_{0};
+  std::atomic<uint64_t> totalHops_{0};
+};
+
+/**
+ * @class TorusInterconnect
+ * @brief 2D Torus topology with wrap-around connections
+ *
+ * Latency model: Manhattan distance with wrap-around * hopLatency
+ * More scalable than mesh for large processor counts.
+ */
+class TorusInterconnect : public InterconnectInterface {
+public:
+  TorusInterconnect(uint32_t numProcessors, uint32_t hopLatency)
+      : numProcessors_(numProcessors), hopLatency_(hopLatency),
+        width_(static_cast<uint32_t>(std::ceil(std::sqrt(numProcessors)))),
+        routers_(numProcessors) {
+    height_ = (numProcessors + width_ - 1) / width_;
+  }
+
+  uint32_t sendMessage(const InterconnectMessage &message) override {
+    uint32_t hops = calculateHops(message.sourceId, message.destId);
+    uint32_t latency = hops * hopLatency_;
+
+    if (message.destId < numProcessors_) {
+      std::lock_guard<std::mutex> lock(routers_[message.destId].mutex);
+      InterconnectMessage msg = message;
+      msg.hopCount = hops;
+      routers_[message.destId].queue.push(msg);
+    }
+
+    totalMessages_.fetch_add(1);
+    totalHops_.fetch_add(hops);
+    return latency;
+  }
+
+  bool hasMessages(uint32_t processorId) const override {
+    if (processorId >= numProcessors_)
+      return false;
+    std::lock_guard<std::mutex> lock(routers_[processorId].mutex);
+    return !routers_[processorId].queue.empty();
+  }
+
+  std::optional<InterconnectMessage>
+  receiveMessage(uint32_t processorId) override {
+    if (processorId >= numProcessors_)
+      return std::nullopt;
+    std::lock_guard<std::mutex> lock(routers_[processorId].mutex);
+    if (routers_[processorId].queue.empty())
+      return std::nullopt;
+    auto msg = routers_[processorId].queue.front();
+    routers_[processorId].queue.pop();
+    return msg;
+  }
+
+  InterconnectStats getStats() const override {
+    uint64_t msgs = totalMessages_.load();
+    return {msgs, totalHops_.load() * hopLatency_, 0,
+            msgs > 0 ? static_cast<double>(totalHops_.load()) / msgs : 0.0,
+            0.0};
+  }
+
+  void resetStats() override {
+    totalMessages_ = 0;
+    totalHops_ = 0;
+  }
+
+private:
+  uint32_t numProcessors_;
+  uint32_t hopLatency_;
+  uint32_t width_;
+  uint32_t height_;
+
+  uint32_t calculateHops(uint32_t src, uint32_t dst) const {
+    if (src == dst)
+      return 0;
+
+    // Convert to 2D coordinates
+    uint32_t srcX = src % width_, srcY = src / width_;
+    uint32_t dstX = dst % width_, dstY = dst / width_;
+
+    // Calculate distance with wrap-around
+    int32_t dx =
+        std::abs(static_cast<int32_t>(dstX) - static_cast<int32_t>(srcX));
+    int32_t dy =
+        std::abs(static_cast<int32_t>(dstY) - static_cast<int32_t>(srcY));
+
+    // Torus wrap-around: min of direct or wrapped distance
+    uint32_t wrapDx = std::min(static_cast<uint32_t>(dx), width_ - dx);
+    uint32_t wrapDy = std::min(static_cast<uint32_t>(dy), height_ - dy);
+
+    return wrapDx + wrapDy;
+  }
+
+  struct RouterNode {
+    std::queue<InterconnectMessage> queue;
+    mutable std::mutex mutex;
+  };
+
+  std::vector<RouterNode> routers_;
+  std::atomic<uint64_t> totalMessages_{0};
+  std::atomic<uint64_t> totalHops_{0};
+};
+
+/**
  * @class InterconnectFactory
  * @brief Factory for creating interconnect instances
  */
@@ -232,7 +416,6 @@ public:
       return std::make_unique<CrossbarInterconnect>(numProcessors, baseLatency);
 
     case InterconnectType::Mesh: {
-      // Calculate mesh dimensions
       uint32_t width = static_cast<uint32_t>(std::sqrt(numProcessors));
       if (width * width < numProcessors)
         width++;
@@ -241,9 +424,10 @@ public:
     }
 
     case InterconnectType::Ring:
+      return std::make_unique<RingInterconnect>(numProcessors, baseLatency);
+
     case InterconnectType::Torus:
-      // FUTURE: Ring and torus topologies - currently falls through to bus
-      return std::make_unique<BusInterconnect>(numProcessors, baseLatency, 64);
+      return std::make_unique<TorusInterconnect>(numProcessors, baseLatency);
 
     default:
       return std::make_unique<BusInterconnect>(numProcessors, baseLatency, 64);

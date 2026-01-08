@@ -2,8 +2,8 @@
  * @file main.cpp
  * @brief Cache Simulator main entry point
  * @author Mudit Bhargava
- * @date 2025-05-29
- * @version 1.2.2
+ * @date 2026-01-07
+ * @version 1.4.0
  *
  * This file contains the main entry point for the Cache Simulator application.
  * It handles command-line argument parsing, configuration loading, and
@@ -30,6 +30,8 @@
 #include "core/memory_hierarchy.h"
 #include "core/victim_cache.h"
 #include "utils/benchmark.h"
+#include "utils/cache_visualization.h" // v1.4.0: Extracted visualization module
+#include "utils/cli_parser.h"          // v1.4.0: Extracted CLI parser module
 #include "utils/config_utils.h"
 #include "utils/logger.h"
 #include "utils/parallel_executor.h"
@@ -42,397 +44,14 @@
 using namespace cachesim;
 namespace fs = std::filesystem;
 
-/**
- * @brief Structure to hold cache block state information for visualization
- */
-struct CacheBlockState {
-  uint64_t address;     // Memory address
-  uint64_t tag;         // Tag bits
-  uint32_t set;         // Set index
-  uint32_t way;         // Way within set
-  bool valid;           // Valid bit
-  bool dirty;           // Dirty bit
-  uint32_t accessCount; // Number of times this block was accessed
-  uint64_t lastAccess;  // Timestamp of last access
-  bool prefetched;      // Whether this block was prefetched
-};
+// NOTE: CacheBlockState struct and extractCacheState() moved to
+// utils/cache_visualization.h/cpp (v1.4.0 refactoring)
 
-/**
- * @brief Extract cache state from a cache object
- * @param cache Reference to the cache object
- * @param cacheLevel Cache level identifier (for display purposes)
- * @return Vector of cache block states
- */
-std::vector<CacheBlockState>
-extractCacheState(const Cache &cache, [[maybe_unused]] int cacheLevel = 1) {
-  std::vector<CacheBlockState> result;
+// NOTE: createCacheStateVisualization() moved to
+// utils/cache_visualization.h/cpp as CacheVisualization::createVisualization()
 
-  // Get cache configuration
-  uint32_t numSets = cache.getNumSets();
-  uint32_t associativity = cache.getAssociativity();
-  uint32_t blockSize = cache.getBlockSize();
-
-  // Calculate bit positions for address decoding
-  uint32_t offsetBits = static_cast<uint32_t>(std::log2(blockSize));
-  uint32_t setBits = static_cast<uint32_t>(std::log2(numSets));
-
-  // Extract state for each cache block
-  for (uint32_t set = 0; set < numSets; ++set) {
-    for (uint32_t way = 0; way < associativity; ++way) {
-      CacheBlockState blockState;
-
-      blockState.set = set;
-      blockState.way = way;
-
-      // Get block information from cache
-      if (cache.isBlockValid(set, way)) {
-        blockState.valid = true;
-        blockState.dirty = cache.isBlockDirty(set, way);
-        blockState.tag = cache.getBlockTag(set, way);
-        blockState.accessCount = cache.getBlockAccessCount(set, way);
-        blockState.lastAccess = cache.getBlockLastAccess(set, way);
-        blockState.prefetched = cache.isBlockPrefetched(set, way);
-
-        // Reconstruct full address from tag and set
-        blockState.address =
-            (blockState.tag << (offsetBits + setBits)) | (set << offsetBits);
-
-        result.push_back(blockState);
-      }
-    }
-  }
-
-  return result;
-}
-
-/**
- * @brief Create ASCII visualization of cache state
- * @param blockStates Vector of cache block states
- * @param cache Reference to cache for configuration info
- * @param maxBlocks Maximum number of blocks to display (0 for all)
- * @param useColors Whether to use ANSI colors
- * @param cacheLevel Cache level for display
- * @return String containing ASCII visualization
- */
-std::string
-createCacheStateVisualization(const std::vector<CacheBlockState> &blockStates,
-                              const Cache &cache, uint32_t maxBlocks = 16,
-                              bool useColors = true, int cacheLevel = 1) {
-  std::ostringstream output;
-
-  // Get cache configuration
-  uint32_t numSets = cache.getNumSets();
-  uint32_t associativity = cache.getAssociativity();
-  uint32_t blockSize = cache.getBlockSize();
-
-  // Define ANSI color codes
-  std::string resetColor = useColors ? "\033[0m" : "";
-  std::string headerColor = useColors ? "\033[1;36m" : "";   // Bright Cyan
-  std::string validColor = useColors ? "\033[1;32m" : "";    // Bright Green
-  std::string dirtyColor = useColors ? "\033[1;33m" : "";    // Bright Yellow
-  std::string addressColor = useColors ? "\033[1;34m" : "";  // Bright Blue
-  std::string prefetchColor = useColors ? "\033[1;35m" : ""; // Bright Magenta
-
-  // Sort blocks by set and way for organized display
-  auto sortedBlocks = blockStates;
-  std::sort(sortedBlocks.begin(), sortedBlocks.end(),
-            [](const CacheBlockState &a, const CacheBlockState &b) {
-              if (a.set != b.set)
-                return a.set < b.set;
-              return a.way < b.way;
-            });
-
-  // Limit display if requested
-  if (maxBlocks > 0 && sortedBlocks.size() > maxBlocks) {
-    sortedBlocks.resize(maxBlocks);
-  }
-
-  // Use ASCII-safe box characters for Windows console compatibility
-  // These work in all terminals without encoding issues
-  const char *boxTL = "+"; // Top-left corner
-  const char *boxTR = "+"; // Top-right corner
-  const char *boxBL = "+"; // Bottom-left corner
-  const char *boxBR = "+"; // Bottom-right corner
-  const char *boxH = "-";  // Horizontal line
-  const char *boxV = "|";  // Vertical line
-  const char *boxT = "+";  // T-junction
-
-  // Fixed table width for consistent alignment (matches header row width)
-  const int TABLE_WIDTH = 77; // Total width including borders
-
-  // Generate top border
-  output << headerColor << boxTL;
-  for (int i = 0; i < TABLE_WIDTH - 2; i++)
-    output << boxH;
-  output << boxTR << resetColor << std::endl;
-
-  // Title row centered
-  std::string title = " L" + std::to_string(cacheLevel) + " Cache State ";
-  int titlePadLeft = (TABLE_WIDTH - 2 - static_cast<int>(title.length())) / 2;
-  int titlePadRight =
-      TABLE_WIDTH - 2 - static_cast<int>(title.length()) - titlePadLeft;
-  output << headerColor << boxV << std::string(titlePadLeft, ' ') << title
-         << std::string(titlePadRight, ' ') << boxV << resetColor << std::endl;
-
-  // Separator
-  output << headerColor << boxT;
-  for (int i = 0; i < TABLE_WIDTH - 2; i++)
-    output << boxH;
-  output << boxT << resetColor << std::endl;
-
-  // Column headers
-  output << headerColor << boxV
-         << " Set | Way |     Tag     | Valid | Dirty |   Address   | Access | "
-            "Pref "
-         << boxV << resetColor << std::endl;
-
-  // Separator
-  output << headerColor << boxT;
-  for (int i = 0; i < TABLE_WIDTH - 2; i++)
-    output << boxH;
-  output << boxT << resetColor << std::endl;
-
-  // Generate rows for each valid cache block
-  for (const auto &block : sortedBlocks) {
-    output << headerColor << boxV << " " << resetColor;
-
-    // Set index (3 digits)
-    output << std::setw(3) << block.set << headerColor << " | " << resetColor;
-
-    // Way (3 digits)
-    output << std::setw(3) << block.way << headerColor << " | " << resetColor;
-
-    // Tag (11 characters, hex)
-    output << addressColor << "0x" << std::hex << std::setw(9)
-           << std::setfill('0') << block.tag << std::dec << std::setfill(' ')
-           << headerColor << " | " << resetColor;
-
-    // Valid bit
-    output << validColor << std::setw(5) << "Yes" << headerColor << " | "
-           << resetColor;
-
-    // Dirty bit
-    if (block.dirty) {
-      output << dirtyColor << std::setw(5) << "Yes";
-    } else {
-      output << std::setw(5) << "No";
-    }
-    output << headerColor << " | " << resetColor;
-
-    // Address (11 characters, hex)
-    output << addressColor << "0x" << std::hex << std::setw(9)
-           << std::setfill('0') << block.address << std::dec
-           << std::setfill(' ') << headerColor << " | " << resetColor;
-
-    // Access count (6 digits)
-    output << std::setw(6) << block.accessCount << headerColor << " | "
-           << resetColor;
-
-    // Prefetch indicator
-    if (block.prefetched) {
-      output << prefetchColor << std::setw(4) << "Yes";
-    } else {
-      output << std::setw(4) << "No";
-    }
-    output << headerColor << " " << boxV << resetColor << std::endl;
-  }
-
-  // Handle empty cache or show "..." if truncated
-  if (sortedBlocks.empty()) {
-    output << headerColor << boxV << std::setw(75)
-           << "Cache is empty or all blocks are invalid"
-           << " " << boxV << resetColor << std::endl;
-  } else if (maxBlocks > 0 && blockStates.size() > maxBlocks) {
-    output << headerColor << boxV << std::setw(TABLE_WIDTH - 3)
-           << "... (showing first " + std::to_string(maxBlocks) + " blocks)"
-           << " " << boxV << resetColor << std::endl;
-  }
-
-  // Footer with statistics
-  output << headerColor << boxT;
-  for (int i = 0; i < TABLE_WIDTH - 2; i++)
-    output << boxH;
-  output << boxT << resetColor << std::endl;
-
-  // Build stats strings with fixed formatting
-  size_t dirtyCount =
-      std::count_if(blockStates.begin(), blockStates.end(),
-                    [](const CacheBlockState &b) { return b.dirty; });
-  std::ostringstream configStr, validStr, dirtyStr;
-  configStr << " Config: " << numSets << " sets x " << associativity
-            << " ways x " << blockSize << " bytes";
-  validStr << " Valid: " << blockStates.size() << "/"
-           << (numSets * associativity) << " blocks (" << std::fixed
-           << std::setprecision(1)
-           << (blockStates.size() * 100.0 / (numSets * associativity)) << "%)";
-  dirtyStr << " Dirty: " << dirtyCount << "/" << blockStates.size()
-           << " blocks (" << std::fixed << std::setprecision(1)
-           << (blockStates.empty() ? 0.0
-                                   : (dirtyCount * 100.0 / blockStates.size()))
-           << "%)";
-
-  // Output stats with proper right-alignment
-  output << headerColor << boxV << resetColor << std::left
-         << std::setw(TABLE_WIDTH - 2) << configStr.str() << headerColor << boxV
-         << resetColor << std::endl;
-  output << headerColor << boxV << resetColor << std::left
-         << std::setw(TABLE_WIDTH - 2) << validStr.str() << headerColor << boxV
-         << resetColor << std::endl;
-  output << headerColor << boxV << resetColor << std::left
-         << std::setw(TABLE_WIDTH - 2) << dirtyStr.str() << headerColor << boxV
-         << resetColor << std::endl;
-
-  output << headerColor << boxBL;
-  for (int i = 0; i < TABLE_WIDTH - 2; i++)
-    output << boxH;
-  output << boxBR << resetColor << std::endl;
-
-  return output.str();
-}
-
-// Command line options
-struct CommandLineOptions {
-  std::filesystem::path configFile;
-  std::filesystem::path traceFile;
-  bool runBenchmark = false;
-  bool visualizeResults = false;
-  bool exportResults = false;
-  std::filesystem::path outputPath;
-  bool verbose = false;
-  bool help = false;
-  bool version = false;
-  bool useColors = true;
-  bool parallel = false;
-  size_t numThreads = 0;
-  bool useVictimCache = false;
-  bool showCharts = false;
-  bool showPowerStats = false;
-  uint32_t techNode = 45; // Default 45nm
-};
-
-// Parse command line arguments
-std::optional<CommandLineOptions> parseCommandLine(int argc, char *argv[]) {
-  CommandLineOptions options;
-
-  // Parse arguments
-  for (int i = 1; i < argc; ++i) {
-    std::string arg = argv[i];
-
-    if (arg == "-h" || arg == "--help") {
-      options.help = true;
-    } else if (arg == "-v" || arg == "--version") {
-      options.version = true;
-    } else if (arg == "-b" || arg == "--benchmark") {
-      options.runBenchmark = true;
-    } else if (arg == "--vis" || arg == "--visualize") {
-      options.visualizeResults = true;
-    } else if (arg == "--no-color") {
-      options.useColors = false;
-    } else if (arg == "--verbose") {
-      options.verbose = true;
-    } else if (arg == "-p" || arg == "--parallel") {
-      options.parallel = true;
-      if (i + 1 < argc && std::isdigit(argv[i + 1][0])) {
-        options.numThreads = std::stoi(argv[++i]);
-      }
-    } else if (arg == "--victim-cache") {
-      options.useVictimCache = true;
-    } else if (arg == "--charts") {
-      options.showCharts = true;
-    } else if (arg == "--power") {
-      options.showPowerStats = true;
-    } else if (arg == "--tech-node") {
-      if (i + 1 < argc && std::isdigit(argv[i + 1][0])) {
-        options.techNode = std::stoi(argv[++i]);
-      }
-    } else if (arg == "-e" || arg == "--export") {
-      options.exportResults = true;
-      if (i + 1 < argc && argv[i + 1][0] != '-') {
-        options.outputPath = argv[++i];
-      } else {
-        options.outputPath = "cache_sim_results.csv";
-      }
-    } else if (arg == "-c" || arg == "--config") {
-      if (i + 1 < argc) {
-        options.configFile = argv[++i];
-      } else {
-        std::cerr << "Error: Missing configuration file path after " << arg
-                  << std::endl;
-        return std::nullopt;
-      }
-    } else if (arg[0] != '-') {
-      // If not a flag, treat as trace file
-      options.traceFile = arg;
-    } else {
-      std::cerr << "Error: Unknown option: " << arg << std::endl;
-      return std::nullopt;
-    }
-  }
-
-  return options;
-}
-
-// Print usage information
-void printUsage(const std::string &programName) {
-  std::cout << "Usage: " << programName << " [options] <trace_file>"
-            << std::endl;
-  std::cout << std::endl;
-  std::cout << "Options:" << std::endl;
-  std::cout << "  -h, --help                 Show this help message and exit"
-            << std::endl;
-  std::cout << "  -v, --version              Show version information and exit"
-            << std::endl;
-  std::cout << "  -c, --config <file>        Specify configuration file"
-            << std::endl;
-  std::cout << "  -b, --benchmark            Run performance benchmark"
-            << std::endl;
-  std::cout << "  --vis, --visualize         Visualize cache behavior"
-            << std::endl;
-  std::cout << "  --no-color                 Disable colored output"
-            << std::endl;
-  std::cout << "  --verbose                  Enable verbose output"
-            << std::endl;
-  std::cout << "  -e, --export [file]        Export results to CSV file"
-            << std::endl;
-  std::cout << "  -p, --parallel [threads]   Enable parallel processing"
-            << std::endl;
-  std::cout << "  --victim-cache             Enable victim cache" << std::endl;
-  std::cout << "  --charts                   Show statistical charts"
-            << std::endl;
-  std::cout << "  --power                    Show power and energy analysis"
-            << std::endl;
-  std::cout << "  --tech-node <nm>           Technology node (7,14,22,32,45) "
-               "default:45"
-            << std::endl;
-  std::cout << std::endl;
-  std::cout << "If no configuration file is specified, the simulator uses:"
-            << std::endl;
-  std::cout << "  BLOCKSIZE=64 L1_SIZE=32KB L1_ASSOC=4 L2_SIZE=256KB "
-               "L2_ASSOC=8 PREF=1 PREF_DIST=4"
-            << std::endl;
-}
-
-/**
- * Display version information including build details
- */
-void printVersion() {
-  std::cout << "Cache Simulator v1.3.0" << std::endl;
-  std::cout << "C++20 Edition" << std::endl;
-  std::cout << "Copyright (c) 2025 Mudit Bhargava" << std::endl;
-  std::cout << "Build Date: " << __DATE__ << " " << __TIME__ << std::endl;
-  std::cout << "Compiler: " <<
-#ifdef __clang__
-      "Clang " << __clang_major__ << "." << __clang_minor__ << "."
-            << __clang_patchlevel__
-#elif defined(__GNUC__)
-      "GCC " << __GNUC__ << "." << __GNUC_MINOR__ << "." << __GNUC_PATCHLEVEL__
-#elif defined(_MSC_VER)
-      "MSVC " << _MSC_VER
-#else
-      "Unknown"
-#endif
-            << std::endl;
-}
+// NOTE: CommandLineOptions, parseCommandLine(), printUsage(), printVersion()
+// moved to utils/cli_parser.h/cpp as CLIParser class (v1.4.0 refactoring)
 
 // Run simulation with given configuration
 void runSimulation(const MemoryHierarchyConfig &config,
@@ -551,11 +170,12 @@ void runSimulation(const MemoryHierarchyConfig &config,
       // Get L1 cache from memory hierarchy
       auto l1Cache = hierarchy.getL1Cache();
       if (l1Cache) {
-        // Extract L1 cache state
-        auto l1BlockStates = extractCacheState(**l1Cache, 1);
+        // Extract L1 cache state using visualization module
+        auto l1BlockStates =
+            CacheVisualization::extractCacheState(**l1Cache, 1);
 
         // Create and display L1 cache visualization
-        std::string l1Visualization = createCacheStateVisualization(
+        std::string l1Visualization = CacheVisualization::createVisualization(
             l1BlockStates, **l1Cache, 16, true, 1);
         std::cout << l1Visualization << std::endl;
 
@@ -563,9 +183,11 @@ void runSimulation(const MemoryHierarchyConfig &config,
         if (config.l2Config) {
           auto l2Cache = hierarchy.getL2Cache();
           if (l2Cache) {
-            auto l2BlockStates = extractCacheState(**l2Cache, 2);
-            std::string l2Visualization = createCacheStateVisualization(
-                l2BlockStates, **l2Cache, 12, true, 2);
+            auto l2BlockStates =
+                CacheVisualization::extractCacheState(**l2Cache, 2);
+            std::string l2Visualization =
+                CacheVisualization::createVisualization(l2BlockStates,
+                                                        **l2Cache, 12, true, 2);
             std::cout << l2Visualization << std::endl;
           }
         }
@@ -713,20 +335,20 @@ int main(int argc, char *argv[]) {
   }
 
   // Parse command line arguments
-  auto options = parseCommandLine(argc, argv);
+  auto options = CLIParser::parse(argc, argv);
   if (!options) {
-    printUsage(argv[0]);
+    CLIParser::printUsage(argv[0]);
     return 1;
   }
 
   // Handle help and version flags
   if (options->help) {
-    printUsage(argv[0]);
+    CLIParser::printUsage(argv[0]);
     return 0;
   }
 
   if (options->version) {
-    printVersion();
+    CLIParser::printVersion();
     return 0;
   }
 
@@ -756,7 +378,7 @@ int main(int argc, char *argv[]) {
 
     if (!cmdConfig) {
       std::cerr << "Error: Invalid command line arguments" << std::endl;
-      printUsage(argv[0]);
+      CLIParser::printUsage(argv[0]);
       return 1;
     }
 
@@ -769,7 +391,7 @@ int main(int argc, char *argv[]) {
   // Check if trace file was provided
   if (options->traceFile.empty()) {
     std::cerr << "Error: No trace file specified" << std::endl;
-    printUsage(argv[0]);
+    CLIParser::printUsage(argv[0]);
     return 1;
   }
 

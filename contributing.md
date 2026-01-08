@@ -3,7 +3,7 @@
 ## Development Setup
 
 ### Prerequisites
-- C++17 compatible compiler
+- C++20 compatible compiler (GCC 10+, Clang 10+, MSVC 2019+)
 - CMake 3.14+
 - Git
 - Doxygen (for documentation)
@@ -31,7 +31,7 @@
 ## Code Style Guidelines
 
 ### C++ Standards
-- Use C++17 features appropriately
+- Use C++20 features appropriately
 - Follow RAII principles
 - Use smart pointers for memory management
 - Prefer const-correctness

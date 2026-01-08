@@ -65,6 +65,24 @@ Write Hit:  M→M, E→M, S→M (invalidate others)
 Write Miss: I→M (invalidate others)
 ```
 
+### MSI Protocol
+A simpler 3-state protocol:
+
+- **Modified (M)**: Block is modified and exclusive
+- **Shared (S)**: Block may be in multiple caches
+- **Invalid (I)**: Block is not valid
+
+### MOESI Protocol
+Extended 5-state protocol with dirty sharing:
+
+- **Modified (M)**: Block is dirty and exclusive
+- **Owned (O)**: Block is dirty but shared with other caches
+- **Exclusive (E)**: Block is clean and exclusive
+- **Shared (S)**: Block may be in multiple caches
+- **Invalid (I)**: Block is not valid
+
+The **Owned** state allows dirty data to be shared without memory writeback, reducing memory traffic.
+
 ## Interconnect Topologies
 
 ### Bus Interconnect
@@ -84,6 +102,18 @@ Write Miss: I→M (invalidate others)
 - **Latency**: Distance-dependent
 - **Scalability**: Excellent
 - **Best for**: Large systems (16+ processors)
+
+### Ring Interconnect
+- **Description**: Bidirectional ring topology
+- **Latency**: `min(clockwise, counterclockwise) × hopLatency`
+- **Scalability**: Good for moderate sizes
+- **Best for**: 4-16 processors
+
+### Torus Interconnect
+- **Description**: 2D mesh with wrap-around connections
+- **Latency**: Minimal Manhattan distance with wrap-around
+- **Scalability**: Excellent
+- **Best for**: Large systems (16-64 processors)
 
 ## Simulation Features
 

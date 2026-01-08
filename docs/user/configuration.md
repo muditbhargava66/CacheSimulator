@@ -70,6 +70,23 @@ The Cache Simulator uses JSON configuration files for advanced settings.
 - **replacementPolicy**: LRU, FIFO, Random, PLRU, NRU (default: LRU)
 - **writePolicy**: WriteBack, WriteThrough (default: WriteBack)
 
+#### L3 Cache
+```json
+"l3": {
+  "size": 8388608,
+  "associativity": 16,
+  "blockSize": 64,
+  "replacementPolicy": "LRU",
+  "writePolicy": "WriteBack"
+},
+"l3_inclusive": true
+```
+
+- **size**: Cache size in bytes (typically 4MB-32MB)
+- **associativity**: Set associativity (default: 16)
+- **blockSize**: Block size in bytes (must match L1/L2)
+- **l3_inclusive**: Whether L3 contains all L1/L2 data (default: true)
+
 ### Advanced Features
 
 #### Victim Cache
@@ -96,11 +113,23 @@ The Cache Simulator uses JSON configuration files for advanced settings.
 "multiprocessor": {
   "enabled": true,
   "numProcessors": 4,
-  "coherenceProtocol": "MESI",
-  "interconnect": "Crossbar",
-  "interconnectLatency": 10
+  "coherenceProtocol": "MOESI",
+  "interconnect": "Torus",
+  "interconnectLatency": 2
 }
 ```
+
+**Coherence Protocols:**
+- **MSI**: 3-state protocol (Modified, Shared, Invalid)
+- **MESI**: 4-state protocol with Exclusive state
+- **MOESI**: 5-state protocol with Owned state for dirty sharing
+
+**Interconnect Types:**
+- **Bus**: Shared bus (low scalability)
+- **Crossbar**: Full crossbar switch
+- **Mesh**: 2D mesh network
+- **Ring**: Bidirectional ring
+- **Torus**: 2D torus with wrap-around
 
 #### Power and Area Modeling
 ```json
