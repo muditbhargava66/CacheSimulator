@@ -109,7 +109,7 @@ The `Cache` class provides a clean `access()` method that handles all the comple
 
 The `MemoryHierarchy` class orchestrates the entire cache hierarchy, managing:
 
-- Multiple cache levels (L1, L2)
+- Multiple cache levels (L1, L2, L3) - L3 support added in v1.4.0
 - Memory access flow through the hierarchy
 - Prefetching configuration and coordination
 - Statistics aggregation
@@ -117,6 +117,28 @@ The `MemoryHierarchy` class orchestrates the entire cache hierarchy, managing:
 - Performance metrics calculation
 
 This class serves as the main API for applications interacting with the simulator, providing methods to access memory, process traces, and retrieve statistics.
+
+#### L3 Cache Support
+
+The `MemoryHierarchy` now supports an optional L3 cache with:
+- Configurable size, associativity, and block size
+- Inclusive or non-inclusive policy
+- Statistics tracking (hit rate, miss rate)
+- Proper access flow: L1 miss → L2 access → L2 miss → L3 access
+
+#### Coherence Protocol Framework
+
+Abstract `CoherenceProtocolBase` class with implementations:
+- **MSIProtocol**: 3-state (Modified, Shared, Invalid)
+- **MESIProtocol**: 4-state with Exclusive
+- **MOESIProtocol**: 5-state with Owned for dirty sharing
+
+#### Interconnect Topologies
+
+The `InterconnectFactory` supports:
+- Bus, Crossbar, Mesh (existing)
+- **RingInterconnect**: Bidirectional ring with wrap-around
+- **TorusInterconnect**: 2D torus with minimal path routing
 
 ### StreamBuffer
 

@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🚀 Cache Simulator
+# Cache Simulator
 
-![Version](https://img.shields.io/badge/version-1.3.0-blue)
+![Version](https://img.shields.io/badge/version-1.4.0-blue)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
@@ -21,13 +21,14 @@
 
 </div>
 
-## What's New in v1.3.0
+## What's New in v1.4.0
 
-- **Power Modeling**: CACTI-inspired energy analysis (dynamic + leakage)
-- **Area Estimation**: Silicon footprint breakdown by component
-- **Technology Nodes**: Support for 7nm, 14nm, 22nm, 32nm, 45nm
-- **CLI Integration**: `--power` and `--tech-node` flags
-- **Visualization Fix**: ASCII-safe table rendering for cross-platform console
+- **L3 Cache Support**: Optional third level cache with inclusive policy
+- **MSI/MOESI Protocols**: Extended coherence protocol support
+- **Ring/Torus Interconnects**: New network topologies with hop-based latency
+- **CLI Parser Module**: Refactored command-line parsing for maintainability
+- **Cache Visualization Module**: Extracted visualization code for reusability
+- **Main.cpp Refactoring**: Reduced from 822 to 442 lines (-46%)
 
 ## Key Features
 
@@ -51,9 +52,9 @@
 - **Configurable Aggressiveness**: Tunable prefetch distance and accuracy
 
 ### Multi-Processor Features
-- **MESI Protocol**: Full Modified-Exclusive-Shared-Invalid implementation
+- **MESI/MSI/MOESI Protocol**: Full coherence protocol implementations
 - **Directory-Based Coherence**: Scalable coherence tracking
-- **Interconnect Models**: Bus, crossbar, and mesh topologies
+- **Interconnect Models**: Bus, Crossbar, Mesh, Ring, and Torus topologies
 - **Atomic Operations**: Support for synchronization primitives
 - **False Sharing Detection**: Identifies and reports cache line conflicts
 
@@ -271,11 +272,11 @@ We welcome contributions! Please see our [Contributing Guide](contributing.md) f
 If you use this simulator in your research, please cite:
 
 ```bibtex
-@software{CacheSimulator2025,
+@software{CacheSimulator2026,
   author = {Mudit Bhargava},
   title = {Cache Simulator: A C++20 Cache and Memory Hierarchy Simulator},
-  version = {1.3.0},
-  year = {2025},
+  version = {1.4.0},
+  year = {2026},
   url = {https://github.com/muditbhargava66/CacheSimulator}
 }
 ```
@@ -301,7 +302,7 @@ This simulator is ideal for:
 
 <div align="center">
 
-**⭐ Star this repo if you find it useful!**
+**Star this repo if you find it useful!**
 
 [![Star History Chart](https://api.star-history.com/svg?repos=muditbhargava66/CacheSimulator&type=Date)](https://star-history.com/#muditbhargava66/CacheSimulator&Date)
 

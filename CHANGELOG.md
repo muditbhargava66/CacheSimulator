@@ -5,6 +5,77 @@ All notable changes to the Cache Simulator project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-01-08
+
+### Added
+- **L3 Cache Support**
+  - Optional third cache level in `MemoryHierarchy`
+  - Configurable via JSON with `l3` section
+  - Inclusive L3 policy for multi-core coherence
+  - Statistics: `getL3Misses()`, `getL3HitRate()`, `getL3MissRate()`
+
+- **MSI/MOESI Coherence Protocols**
+  - `CoherenceProtocolBase` abstract interface
+  - `MSIProtocol`: 3-state protocol (Modified, Shared, Invalid)
+  - `MOESIProtocol`: 5-state protocol (Modified, Owned, Exclusive, Shared, Invalid)
+  - Factory pattern: `CoherenceProtocolBase::create(type)`
+  - State transition tracking and statistics
+
+- **Ring and Torus Interconnects**
+  - `RingInterconnect`: Bidirectional ring with shortest path routing
+  - `TorusInterconnect`: 2D torus with wrap-around connections
+  - Proper latency modeling based on hop count
+  - Full implementation of `InterconnectInterface`
+
+- **CLI Parser Module**
+  - Extracted from main.cpp to `utils/cli_parser.h/cpp`
+  - `CLIParser` class with static methods
+  - Improved code organization and testability
+
+- **Cache Visualization Module**
+  - Extracted from main.cpp to `utils/cache_visualization.h/cpp`
+  - `CacheVisualization` class with cache state extraction and ASCII rendering
+  - `CacheBlockState` struct for block metadata
+
+- **New Unit Tests**
+  - `tests/unit/core/coherence_protocol_test.cpp` - MSI/MOESI protocol tests
+  - `tests/unit/core/l3_cache_test.cpp` - L3 cache tests
+  - `tests/unit/multiprocessor/interconnect_test.cpp` - Ring/Torus tests
+  - `tests/unit/utils/cli_parser_test.cpp` - CLI parsing tests
+
+- **Multiprocessor Protocol Selection**
+  - Added `coherenceProtocol` and `interconnectType` to `MultiProcessorSystem::Config`
+  - Supports MSI, MESI, MOESI protocol selection
+  - Supports Bus, Crossbar, Mesh, Ring, Torus interconnect selection
+
+### Changed
+- **Refactored main.cpp**: Reduced from 822 to 442 lines (-46%)
+  - Now uses `CLIParser` for command-line parsing
+  - Now uses `CacheVisualization` for cache state display
+- Updated `memory_hierarchy.h` with L3 configuration support
+- Updated `CMakeLists.txt` with new source files and tests
+- Made Doxygen configuration conditional on file existence
+- Updated documentation for all new features
+
+### New Files
+- `src/core/coherence_protocol.h/cpp` - Protocol base class and factory
+- `src/core/msi_protocol.h/cpp` - MSI implementation
+- `src/core/moesi_protocol.h/cpp` - MOESI implementation
+- `src/utils/cli_parser.h/cpp` - CLI parsing module
+- `src/utils/cache_visualization.h/cpp` - Cache visualization module
+- `docs/features/l3-cache.md` - L3 cache documentation
+- `docs/features/coherence-protocols.md` - Protocol documentation
+- `docs/features/interconnects.md` - Interconnect documentation
+
+### Technical Details
+- MOESI Owned state enables dirty sharing without memory writeback
+- Ring latency: `min(clockwise, counterclockwise) * hopLatency`
+- Torus latency: `(wrapDx + wrapDy) * hopLatency`
+- L3 inclusive policy maintains copy of all L1/L2 data
+- All 18 tests pass (unit, integration, performance)
+
+---
+
 ## [1.3.0] - 2026-01-07
 
 ### Added
@@ -106,6 +177,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The fixes ensure compatibility across Windows (GCC/MSVC), macOS (Clang/GCC), and Linux (GCC/Clang)
 - No functional changes - only build and compatibility improvements
 
+---
+
 ## [1.2.1] - 2025-09-02
 
 ### Fixed
@@ -125,6 +198,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [x] Successfully processes 80 memory accesses from multiprocessor trace
 - [x] Compatible with all existing configuration files
 - [x] No performance regression
+
+---
 
 ## [1.2.0] - 2025-07-19
 
@@ -193,6 +268,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed lambda capture warnings in victim_cache.h
 - Improved const-correctness throughout the codebase
 
+---
+
 ## [1.1.0] - 2025-05-27
 
 ### Added
@@ -229,6 +306,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 25% improvement in simulation speed for large traces
 - Reduced memory footprint by 15% through better data structures
 - Optimized prefetcher reduces unnecessary memory traffic by 30%
+
+---
 
 ## [1.0.0] - 2025-03-12
 
@@ -290,7 +369,9 @@ This release marks the first stable version of the Cache Simulator, featuring a 
 - Nodiscard attribute handling for method return values
 - String_view temporary object lifetime issues
 
-### Future Development
+---
+
+## Future Development
 - Identified TODOs for future enhancements (see TODO.md for details):
   - Multi-processor simulation
   - Additional replacement policies

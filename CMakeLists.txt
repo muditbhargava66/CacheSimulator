@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(CacheSimulator VERSION 1.3.0 LANGUAGES CXX)
+project(CacheSimulator VERSION 1.4.0 LANGUAGES CXX)
 
 # Set C++20 as the required standard (required for designated initializers)
 set(CMAKE_CXX_STANDARD 20)
@@ -54,6 +54,15 @@ list(APPEND CORE_SOURCES "src/core/write_policy.cpp")
 list(APPEND CORE_SOURCES "src/core/multiprocessor/processor_core.cpp")
 list(APPEND CORE_SOURCES "src/core/multiprocessor/coherence_controller.cpp")
 list(APPEND CORE_SOURCES "src/core/multiprocessor/interconnect.cpp")
+
+# coherence protocols
+list(APPEND CORE_SOURCES "src/core/coherence_protocol.cpp")
+list(APPEND CORE_SOURCES "src/core/msi_protocol.cpp")
+list(APPEND CORE_SOURCES "src/core/moesi_protocol.cpp")
+
+# CLI parser module
+list(APPEND UTILS_SOURCES "src/utils/cli_parser.cpp")
+
 # Note: victim_cache.h, parallel_executor.h are header-only
 
 # Define header files
@@ -128,6 +137,16 @@ foreach(TEST_SOURCE ${MODELS_TEST_SOURCES})
     add_test(NAME unit_models_${TEST_NAME} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/unit/models/${TEST_NAME})
 endforeach()
 
+# Add unit tests - Multiprocessor
+file(GLOB MULTIPROCESSOR_TEST_SOURCES "tests/unit/multiprocessor/*.cpp")
+foreach(TEST_SOURCE ${MULTIPROCESSOR_TEST_SOURCES})
+    get_filename_component(TEST_NAME ${TEST_SOURCE} NAME_WE)
+    add_executable(${TEST_NAME} ${TEST_SOURCE})
+    target_link_libraries(${TEST_NAME} cachesim_lib)
+    set_target_properties(${TEST_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/unit/multiprocessor)
+    add_test(NAME unit_multiprocessor_${TEST_NAME} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/unit/multiprocessor/${TEST_NAME})
+endforeach()
+
 # Add integration tests
 file(GLOB INTEGRATION_TEST_SOURCES "tests/integration/*.cpp")
 foreach(TEST_SOURCE ${INTEGRATION_TEST_SOURCES})
@@ -165,8 +184,8 @@ install(DIRECTORY scripts/
 )
 
 # Documentation target if Doxygen is available
-find_package(Doxygen)
-if(DOXYGEN_FOUND)
+find_package(Doxygen QUIET)
+if(DOXYGEN_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/docs/Doxyfile.in")
     set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR}/src)
     set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/docs)
     set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/html/index.html)

@@ -647,6 +647,44 @@ ConfigManager::parseJsonConfig(const std::filesystem::path &configPath) {
                 WritePolicy::WriteThrough;
           }
         }
+      } else if (currentSection == "sharedL3" || currentSection == "l3") {
+        // Initialize L3 if not already present
+        if (!config.hierarchyConfig.l3Config) {
+          config.hierarchyConfig.l3Config = CacheConfig{};
+        }
+
+        if (key == "size") {
+          config.hierarchyConfig.l3Config->size = std::stoi(value);
+        } else if (key == "associativity") {
+          config.hierarchyConfig.l3Config->associativity = std::stoi(value);
+        } else if (key == "blockSize") {
+          config.hierarchyConfig.l3Config->blockSize = std::stoi(value);
+        } else if (key == "replacementPolicy") {
+          if (value == "LRU") {
+            config.hierarchyConfig.l3Config->replacementPolicy =
+                ReplacementPolicy::LRU;
+          } else if (value == "NRU") {
+            config.hierarchyConfig.l3Config->replacementPolicy =
+                ReplacementPolicy::NRU;
+          } else if (value == "FIFO") {
+            config.hierarchyConfig.l3Config->replacementPolicy =
+                ReplacementPolicy::FIFO;
+          } else if (value == "Random") {
+            config.hierarchyConfig.l3Config->replacementPolicy =
+                ReplacementPolicy::Random;
+          } else if (value == "PLRU") {
+            config.hierarchyConfig.l3Config->replacementPolicy =
+                ReplacementPolicy::PLRU;
+          }
+        } else if (key == "writePolicy") {
+          if (value == "WriteBack") {
+            config.hierarchyConfig.l3Config->writePolicy =
+                WritePolicy::WriteBack;
+          } else if (value == "WriteThrough") {
+            config.hierarchyConfig.l3Config->writePolicy =
+                WritePolicy::WriteThrough;
+          }
+        }
       } else if (currentSection.empty()) {
         // Top-level keys
         if (key == "name") {
