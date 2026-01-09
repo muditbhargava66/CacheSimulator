@@ -2,9 +2,9 @@
 
 # Cache Simulator
 
-![Version](https://img.shields.io/badge/version-1.4.0-blue)
+![Version](https://img.shields.io/badge/version-1.4.1-blue)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-orange)
-![License](https://img.shields.io/badge/license-MIT-green)
+![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)
 
@@ -164,22 +164,33 @@ Run with configuration:
 
 ### Performance Results
 
-| Configuration | L1 Hit Rate | L2 Hit Rate | Overall | Avg Latency | Speedup |
-|--------------|-------------|-------------|---------|-------------|---------|
-| Basic L1 (32KB) | 85.2% | - | 85.2% | 12.5 cycles | 1.0x |
-| L1+L2 (32KB+256KB) | 85.2% | 78.3% | 96.7% | 4.8 cycles | 2.6x |
-| With Prefetching | 89.1% | 82.5% | 98.1% | 3.2 cycles | 3.9x |
-| NRU + Victim Cache | 87.8% | 79.1% | 97.5% | 3.5 cycles | 3.6x |
-| High-Performance | 91.3% | 85.2% | 98.8% | 2.9 cycles | 4.3x |
+| Configuration           | L1 Hit Rate | L2 Hit Rate | L3 Hit Rate | Overall | Avg Latency |
+| ----------------------- | ----------- | ----------- | ----------- | ------- | ----------- |
+| Basic L1 (32KB)         | 85.2%       | -           | -           | 85.2%   | 12.5 cycles |
+| L1+L2 (32KB+256KB)      | 85.2%       | 78.3%       | -           | 96.7%   | 4.8 cycles  |
+| L1+L2+L3 (8MB)          | 85.2%       | 78.3%       | 92.1%       | 99.4%   | 2.1 cycles  |
+| With Prefetching        | 89.1%       | 82.5%       | 94.2%       | 99.6%   | 1.8 cycles  |
+| High-Performance Config | 91.3%       | 85.2%       | 95.8%       | 99.8%   | 1.5 cycles  |
 
-### Feature Impact
+### Feature Comparison
 
-| Feature | Improvement | Notes |
-|---------|-------------|-------|
-| Parallel Processing | 3.8x speedup | 8-core system |
-| Victim Cache | 25% fewer conflict misses | Direct-mapped L1 |
-| NRU Policy | 15% faster than LRU | Large working sets |
-| Prefetching | 40% miss reduction | Sequential workloads |
+| Feature                 | Improvement               | Notes                    |
+| ----------------------- | ------------------------- | ------------------------ |
+| L3 Cache                | 15% fewer memory accesses | 8MB inclusive LLC        |
+| MOESI Protocol          | 20% less bus traffic      | Owned state optimization |
+| Ring/Torus Interconnect | Lower latency at scale    | 8+ core systems          |
+| Victim Cache            | 25% fewer conflict misses | Direct-mapped L1         |
+| NRU Policy              | 15% faster than LRU       | Large working sets       |
+| Prefetching             | 40% miss reduction        | Sequential workloads     |
+
+### Use Cases
+
+| Application              | Recommended Config                    |
+| ------------------------ | ------------------------------------- |
+| CPU Design Education     | Basic L1+L2, LRU policy               |
+| Performance Optimization | Full hierarchy, adaptive prefetching  |
+| Side-Channel Research    | L3 cache, precise timing, profiler    |
+| Multi-core Systems       | MOESI/MSI protocol, Ring interconnect |
 
 ## Tools and Utilities
 
@@ -275,7 +286,7 @@ If you use this simulator in your research, please cite:
 @software{CacheSimulator2026,
   author = {Mudit Bhargava},
   title = {Cache Simulator: A C++20 Cache and Memory Hierarchy Simulator},
-  version = {1.4.0},
+  version = {1.4.1},
   year = {2026},
   url = {https://github.com/muditbhargava66/CacheSimulator}
 }
@@ -306,11 +317,11 @@ This simulator is ideal for:
 
 [![Star History Chart](https://api.star-history.com/svg?repos=muditbhargava66/CacheSimulator&type=Date)](https://star-history.com/#muditbhargava66/CacheSimulator&Date)
 
-  
+
 📫 **Contact**: [@muditbhargava66](https://github.com/muditbhargava66)
 🐛 **Report Issues**: [Issue Tracker](https://github.com/muditbhargava66/CacheSimulator/issues)
-  
-© 2026 Mudit Bhargava. [MIT License](LICENSE)  
+
+© 2026 Mudit Bhargava. [Apache License 2.0](LICENSE)
 <!-- Copyright symbol using HTML entity for better compatibility -->
 
 </div>

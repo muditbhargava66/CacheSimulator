@@ -1,8 +1,7 @@
 {
   "name": "Small L1 with Victim Cache",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "description": "Small L1 cache supplemented with victim cache for conflict miss reduction",
-  
   "cache_hierarchy": {
     "l1": {
       "size": 16384,
@@ -14,7 +13,6 @@
         "allocation": "write_allocate"
       }
     },
-    
     "l2": {
       "size": 262144,
       "associativity": 8,
@@ -25,7 +23,6 @@
         "allocation": "write_allocate"
       }
     },
-    
     "victim_cache": {
       "enabled": true,
       "size": 16,
@@ -34,17 +31,15 @@
       "include_dirty": true
     }
   },
-  
   "statistics": {
     "track_victim_cache_separately": true,
     "victim_cache_stats": [
       "hits",
-      "misses", 
+      "misses",
       "evictions",
       "dirty_evictions",
       "utilization"
     ]
   },
-  
   "notes": "Victim cache effectively increases associativity for frequently conflicting addresses"
 }

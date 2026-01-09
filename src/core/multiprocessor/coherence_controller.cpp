@@ -20,15 +20,15 @@ CoherenceController::CoherenceController(uint32_t numProcessors, uint32_t interc
 
 CoherenceResponse CoherenceController::processRequest(const CoherenceRequest& request) {
     std::lock_guard<std::mutex> lock(directoryMutex_);
-    
+
     CoherenceResponse response;
     response.granted = false;
     response.hasData = false;
     response.latency = interconnectLatency_;
-    
+
     // Get or create directory entry
     DirectoryEntry& entry = getOrCreateEntry(request.address);
-    
+
     switch (request.type) {
         case CoherenceRequestType::ReadRequest:
             readRequests_++;
@@ -61,7 +61,7 @@ CoherenceResponse CoherenceController::processRequest(const CoherenceRequest& re
                 response.newState = MESIState::Shared;
             }
             break;
-            
+
         case CoherenceRequestType::WriteRequest:
             writeRequests_++;
             if (entry.state_ == MESIState::Invalid) {
@@ -102,7 +102,7 @@ CoherenceResponse CoherenceController::processRequest(const CoherenceRequest& re
                 invalidations_ += response.invalidatedProcessors.size();
             }
             break;
-            
+
         case CoherenceRequestType::InvalidateRequest:
             invalidations_++;
             response.invalidatedProcessors = invalidateSharers(request.address, request.requestorId);
@@ -111,7 +111,7 @@ CoherenceResponse CoherenceController::processRequest(const CoherenceRequest& re
             entry.sharers_.clear();
             response.granted = true;
             break;
-            
+
         case CoherenceRequestType::WritebackRequest:
             writebacks_++;
             if (entry.owner_ == static_cast<int32_t>(request.requestorId)) {
@@ -120,22 +120,22 @@ CoherenceResponse CoherenceController::processRequest(const CoherenceRequest& re
             }
             break;
     }
-    
+
     coherenceMessages_++;
     entry.lastAccess_ = std::chrono::steady_clock::now().time_since_epoch().count();
-    
+
     return response;
 }
 
 void CoherenceController::updateCacheState(uint32_t processorId, uint32_t address,
                                          MESIState oldState, MESIState newState) {
     std::lock_guard<std::mutex> lock(directoryMutex_);
-    
+
     stateTransitions_++;
-    
+
     // Update directory
     DirectoryEntry& entry = getOrCreateEntry(address);
-    
+
     if (newState == MESIState::Invalid) {
         entry.sharers_.erase(processorId);
         if (entry.owner_ == static_cast<int32_t>(processorId)) {
@@ -147,9 +147,9 @@ void CoherenceController::updateCacheState(uint32_t processorId, uint32_t addres
 void CoherenceController::handleWriteback(uint32_t processorId, uint32_t address,
                                         const std::vector<uint8_t>& data) {
     std::lock_guard<std::mutex> lock(directoryMutex_);
-    
+
     writebacks_++;
-    
+
     DirectoryEntry& entry = getOrCreateEntry(address);
     if (entry.owner_ == static_cast<int32_t>(processorId)) {
         entry.dirty_ = false;
@@ -159,14 +159,14 @@ void CoherenceController::handleWriteback(uint32_t processorId, uint32_t address
 
 bool CoherenceController::checkPermission(uint32_t processorId, uint32_t address, bool isWrite) {
     std::lock_guard<std::mutex> lock(directoryMutex_);
-    
+
     auto it = directory_.find(address);
     if (it == directory_.end()) {
         return true; // No entry means no restrictions
     }
-    
+
     const DirectoryEntry& entry = it->second;
-    
+
     if (isWrite) {
         // Write needs exclusive access
         return entry.state_ == MESIState::Modified && entry.owner_ == static_cast<int32_t>(processorId);
@@ -178,27 +178,27 @@ bool CoherenceController::checkPermission(uint32_t processorId, uint32_t address
             return entry.owner_ == static_cast<int32_t>(processorId);
         }
     }
-    
+
     return false;
 }
 
 MESIState CoherenceController::getCacheLineState(uint32_t processorId, uint32_t address) const {
     std::lock_guard<std::mutex> lock(directoryMutex_);
-    
+
     auto it = directory_.find(address);
     if (it == directory_.end()) {
         return MESIState::Invalid;
     }
-    
+
     const DirectoryEntry& entry = it->second;
-    
+
     if (entry.state_ == MESIState::Shared && entry.sharers_.count(processorId) > 0) {
         return MESIState::Shared;
     } else if ((entry.state_ == MESIState::Exclusive || entry.state_ == MESIState::Modified) &&
                entry.owner_ == static_cast<int32_t>(processorId)) {
         return entry.state_;
     }
-    
+
     return MESIState::Invalid;
 }
 
@@ -232,7 +232,7 @@ void CoherenceController::printStats() const {
     std::cout << "  State Transitions: " << stats.stateTransitions << std::endl;
     std::cout << "  Coherence Messages: " << stats.coherenceMessages << std::endl;
     std::cout << "  Avg Messages per Request: " << std::fixed << std::setprecision(2)
-              << (static_cast<double>(stats.coherenceMessages) / 
+              << (static_cast<double>(stats.coherenceMessages) /
                   (stats.readRequests + stats.writeRequests)) << std::endl;
 }
 
@@ -242,23 +242,23 @@ DirectoryEntry& CoherenceController::getOrCreateEntry(uint32_t address) {
 
 std::vector<uint32_t> CoherenceController::invalidateSharers(uint32_t address, uint32_t excludeProcessor) {
     std::vector<uint32_t> invalidated;
-    
+
     auto it = directory_.find(address);
     if (it != directory_.end()) {
         DirectoryEntry& entry = it->second;
-        
+
         // Collect all processors to invalidate
         for (uint32_t sharer : entry.sharers_) {
             if (sharer != excludeProcessor) {
                 invalidated.push_back(sharer);
             }
         }
-        
+
         if (entry.owner_ >= 0 && entry.owner_ != static_cast<int32_t>(excludeProcessor)) {
             invalidated.push_back(entry.owner_);
         }
     }
-    
+
     return invalidated;
 }
 
@@ -273,7 +273,7 @@ void CoherenceController::broadcastInvalidate(uint32_t address, const std::vecto
                 .needsData = false,
                 .timestamp = static_cast<uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count())
             };
-            
+
             processors_[processorId]->handleCoherenceRequest(invRequest);
         }
     }

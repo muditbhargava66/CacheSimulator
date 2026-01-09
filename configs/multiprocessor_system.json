@@ -1,13 +1,11 @@
 {
   "name": "Multi-Processor System Configuration",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "description": "4-core system with private L1 caches and shared L2",
-  
   "multiprocessor": {
     "enabled": true,
     "num_processors": 4,
     "topology": "symmetric",
-    
     "per_processor_cache": {
       "l1": {
         "size": 32768,
@@ -20,7 +18,6 @@
         }
       }
     },
-    
     "shared_cache": {
       "l2": {
         "size": 1048576,
@@ -34,14 +31,16 @@
         "partitioning": "none"
       }
     },
-    
     "coherence": {
       "protocol": "MESI",
       "directory_type": "distributed",
       "snoop_filter": true,
-      "atomic_operations": ["test_and_set", "compare_and_swap", "fetch_and_add"]
+      "atomic_operations": [
+        "test_and_set",
+        "compare_and_swap",
+        "fetch_and_add"
+      ]
     },
-    
     "interconnect": {
       "type": "crossbar",
       "latency": {
@@ -51,19 +50,20 @@
       "bandwidth": 10000,
       "arbitration": "round_robin"
     },
-    
     "memory_model": {
       "consistency": "total_store_order",
-      "barriers": ["acquire", "release", "full"]
+      "barriers": [
+        "acquire",
+        "release",
+        "full"
+      ]
     }
   },
-  
   "simulation": {
     "parallel_execution": true,
     "synchronization_interval": 1000,
     "coherence_trace": true
   },
-  
   "statistics": {
     "per_processor_stats": true,
     "coherence_stats": [

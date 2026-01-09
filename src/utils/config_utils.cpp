@@ -1,11 +1,13 @@
 #include "config_utils.h"
 
 #include <algorithm>
+#include <cctype>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 
 // Simple but functional JSON/INI parser implementation
 // Note: For complex configurations, consider using nlohmann/json or similar
@@ -13,6 +15,96 @@
 // correctly
 
 namespace cachesim {
+
+// Helper function to convert snake_case to camelCase
+// e.g., "block_size" -> "blockSize", "replacement_policy" ->
+// "replacementPolicy"
+static std::string normalizeConfigKey(const std::string &key) {
+  std::string result;
+  result.reserve(key.size());
+  bool capitalizeNext = false;
+
+  for (char c : key) {
+    if (c == '_') {
+      capitalizeNext = true;
+    } else if (capitalizeNext) {
+      result += static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+      capitalizeNext = false;
+    } else {
+      result += c;
+    }
+  }
+
+  return result;
+}
+
+// Set of recognized configuration keys for validation
+static const std::unordered_set<std::string> recognizedKeys = {
+    // Cache config keys
+    "size", "associativity", "blockSize", "replacementPolicy", "writePolicy",
+    // Prefetch keys
+    "enabled", "distance", "degree", "adaptive",
+    // Victim cache keys
+    "forLevel",
+    // Write combining buffer keys
+    "entries",
+    // Multiprocessor keys
+    "numProcessors", "coherenceProtocol", "type", "latency", "bandwidth",
+    // Simulation keys
+    "parallelExecution", "numThreads", "chunkSize", "warmupPeriod",
+    "statisticsInterval",
+    // Output keys
+    "verbose", "cacheState", "accessPattern", "hitRateEvolution",
+    "exportFormat",
+    // Metadata keys
+    "name", "version", "description", "notes"};
+
+// Helper to find similar recognized keys (simple similarity check)
+static std::string findSimilarKey(const std::string &key) {
+  std::string bestMatch;
+  size_t minDist = std::string::npos;
+
+  for (const auto &recognized : recognizedKeys) {
+    // Simple character overlap check
+    size_t common = 0;
+    for (char c : key) {
+      if (recognized.find(c) != std::string::npos)
+        ++common;
+    }
+    size_t dist = std::max(key.size(), recognized.size()) - common;
+    if (dist < minDist && dist <= 3) { // Within 3 character difference
+      minDist = dist;
+      bestMatch = recognized;
+    }
+  }
+  return bestMatch;
+}
+
+// Helper to log unrecognized keys with format suggestions
+static void logUnrecognizedKey(const std::string &section,
+                               const std::string &key,
+                               const std::string &originalKey) {
+  // Only log if key is not recognized
+  if (recognizedKeys.find(key) != recognizedKeys.end()) {
+    return; // Key is valid, no warning needed
+  }
+
+  std::string suggestion = findSimilarKey(key);
+
+  if (key != originalKey) {
+    std::cerr << "[Config Warning] Unrecognized key '" << originalKey
+              << "' (normalized to '" << key << "') in section '" << section
+              << "'";
+  } else {
+    std::cerr << "[Config Warning] Unrecognized key '" << key
+              << "' in section '" << section << "'";
+  }
+
+  if (!suggestion.empty()) {
+    std::cerr << ". Did you mean '" << suggestion << "'?";
+  }
+  std::cerr << std::endl;
+}
 
 ConfigManager::ConfigManager(ConfigFormat format) : format(format) {}
 
@@ -567,6 +659,10 @@ ConfigManager::parseJsonConfig(const std::filesystem::path &configPath) {
       key.erase(std::remove(key.begin(), key.end(), '\"'), key.end());
       key.erase(std::remove(key.begin(), key.end(), ' '), key.end());
       key.erase(std::remove(key.begin(), key.end(), '\t'), key.end());
+
+      // Normalize key from snake_case to camelCase for compatibility
+      std::string originalKey = key;
+      key = normalizeConfigKey(key);
 
       value.erase(std::remove(value.begin(), value.end(), '\"'), value.end());
       value.erase(0, value.find_first_not_of(" \t"));

@@ -30,7 +30,7 @@ cd CacheSimulator
 
 ```bash
 ./build/bin/cachesim --version
-# Output: Cache Simulator v1.3.0
+# Output: Cache Simulator v1.4.1
 ```
 
 ## Basic Usage

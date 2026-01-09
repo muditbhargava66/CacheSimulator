@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 $NUM_CORES = [Environment]::ProcessorCount
 if ($NUM_CORES -eq 0) { $NUM_CORES = 4 }
 
-Write-Host "Building Cache Simulator v1.4.0" -ForegroundColor Cyan
+Write-Host "Building Cache Simulator v1.4.1" -ForegroundColor Cyan
 Write-Host "Detected $NUM_CORES CPU cores" -ForegroundColor Gray
 
 # Create build directory if it doesn't exist

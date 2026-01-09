@@ -1,8 +1,7 @@
 {
   "name": "NRU Performance Configuration",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "description": "Configuration optimized for NRU replacement policy performance",
-  
   "cache_hierarchy": {
     "l1": {
       "size": 65536,
@@ -15,7 +14,6 @@
       },
       "reference_bit_clear_interval": 256
     },
-    
     "l2": {
       "size": 524288,
       "associativity": 16,
@@ -28,6 +26,5 @@
       "reference_bit_clear_interval": 1024
     }
   },
-  
   "notes": "NRU provides near-LRU performance with lower overhead, especially beneficial for larger caches"
 }
