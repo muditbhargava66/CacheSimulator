@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -22,6 +23,14 @@ struct MemoryHierarchyConfig {
   bool useAdaptivePrefetching = false;
   int strideTableSize = 1024;
   bool l3Inclusive = true; // NEW: L3 inclusion policy
+
+  // User-defined profiler regions
+  struct ProfilerRegionConfig {
+    uint32_t startAddress;
+    uint32_t endAddress;
+    std::string name;
+  };
+  std::vector<ProfilerRegionConfig> profilerRegions;
 
   // Default constructor
   MemoryHierarchyConfig() = default;

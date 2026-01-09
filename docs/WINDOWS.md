@@ -1,6 +1,6 @@
 # Windows Platform Support
 
-> **Version**: 1.2.2  
+> **Version**: 1.4.1
 > **Last Updated**: January 2026
 
 This document covers building and running CacheSimulator on Windows systems.
@@ -153,14 +153,14 @@ Windows-native PowerShell scripts are provided for convenience:
 
 ## Compatibility Matrix
 
-| Feature | Windows | macOS | Linux |
-|---------|---------|-------|-------|
-| Core simulation | ✓ | ✓ | ✓ |
-| Multi-processor | ✓ | ✓ | ✓ |
-| Parallel processing | ✓ | ✓ | ✓ |
-| File operations | ✓ | ✓ | ✓ |
-| Console colors | Terminal¹ | ✓ | ✓ |
-| All tests pass | ✓ | ✓ | ✓ |
+| Feature             | Windows   | macOS | Linux |
+| ------------------- | --------- | ----- | ----- |
+| Core simulation     | ✓         | ✓     | ✓     |
+| Multi-processor     | ✓         | ✓     | ✓     |
+| Parallel processing | ✓         | ✓     | ✓     |
+| File operations     | ✓         | ✓     | ✓     |
+| Console colors      | Terminal¹ | ✓     | ✓     |
+| All tests pass      | ✓         | ✓     | ✓     |
 
 ¹ Requires Windows Terminal or compatible terminal emulator
 
@@ -189,6 +189,6 @@ ctest --output-on-failure -V
 
 For Windows-specific issues, please open a GitHub issue with:
 - Windows version
-- Compiler version  
+- Compiler version
 - CMake version
 - Full error output

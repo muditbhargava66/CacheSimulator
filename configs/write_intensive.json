@@ -1,8 +1,7 @@
 {
   "name": "Write-Intensive Workload Configuration",
-  "version": "1.2.0",
+  "version": "1.4.0",
   "description": "Optimized for write-heavy workloads with no-write-allocate",
-  
   "cache_hierarchy": {
     "l1": {
       "size": 32768,
@@ -14,7 +13,6 @@
         "allocation": "no_write_allocate"
       }
     },
-    
     "l2": {
       "size": 262144,
       "associativity": 8,
@@ -25,7 +23,6 @@
         "allocation": "write_allocate"
       }
     },
-    
     "write_combining_buffer": {
       "enabled": true,
       "entries": 16,
@@ -33,6 +30,5 @@
       "timeout_cycles": 100
     }
   },
-  
   "notes": "Write-through L1 with no-write-allocate reduces cache pollution for streaming writes"
 }

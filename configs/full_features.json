@@ -1,8 +1,7 @@
 {
-  "name": "v1.2.0 Full Features Configuration",
-  "version": "1.2.0",
-  "description": "Configuration showcasing all v1.2.0 features",
-  
+  "name": "Full Features Configuration",
+  "version": "1.4.0",
+  "description": "Configuration showcasing all features",
   "cache_hierarchy": {
     "l1": {
       "size": 32768,
@@ -19,7 +18,6 @@
         "degree": 2
       }
     },
-    
     "l2": {
       "size": 262144,
       "associativity": 8,
@@ -35,19 +33,16 @@
         "degree": 4
       }
     },
-    
     "victim_cache": {
       "enabled": true,
       "size": 8,
       "for_level": "L1"
     },
-    
     "write_combining_buffer": {
       "enabled": true,
       "entries": 8
     }
   },
-  
   "prefetching": {
     "stride_prediction": {
       "enabled": true,
@@ -60,7 +55,6 @@
       "adaptation_interval": 10000
     }
   },
-  
   "multiprocessor": {
     "enabled": true,
     "num_processors": 4,
@@ -75,7 +69,6 @@
       "latency": 5
     }
   },
-  
   "simulation": {
     "parallel_execution": true,
     "num_threads": 0,
@@ -83,14 +76,17 @@
     "warmup_period": 1000,
     "statistics_interval": 100000
   },
-  
   "output": {
     "verbose": false,
     "visualizations": {
       "cache_state": true,
       "access_pattern": true,
       "hit_rate_evolution": true,
-      "charts": ["histogram", "line", "pie"]
+      "charts": [
+        "histogram",
+        "line",
+        "pie"
+      ]
     },
     "export_format": "csv"
   }

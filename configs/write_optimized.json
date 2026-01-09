@@ -1,8 +1,7 @@
 {
   "name": "Write-Optimized Configuration",
-  "description": "Optimized for write-intensive workloads with v1.2.0 features",
-  "version": "1.2.0",
-  
+  "description": "Optimized for write-intensive workloads",
+  "version": "1.4.0",
   "l1": {
     "size": 32768,
     "associativity": 4,
@@ -14,7 +13,6 @@
       "enabled": false
     }
   },
-  
   "l2": {
     "size": 524288,
     "associativity": 8,
@@ -23,7 +21,6 @@
     "writePolicy": "WriteBack",
     "writeAllocatePolicy": "WriteAllocate"
   },
-  
   "writeCombining": {
     "enabled": true,
     "bufferSize": 16,
@@ -31,13 +28,11 @@
     "flushThreshold": 12,
     "timeoutCycles": 100
   },
-  
   "victimCache": {
     "enabled": true,
     "size": 16,
     "includeDirtyBlocks": true
   },
-  
   "optimization": {
     "bypassL1ForStreaming": true,
     "nonTemporalHints": true,

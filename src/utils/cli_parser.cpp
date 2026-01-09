@@ -111,7 +111,7 @@ void CLIParser::printUsage(const std::string &programName) {
 }
 
 void CLIParser::printVersion() {
-  std::cout << "Cache Simulator v1.4.0" << std::endl;
+  std::cout << "Cache Simulator v1.4.1" << std::endl;
   std::cout << "C++20 Edition" << std::endl;
   std::cout << "Copyright (c) 2025-2026 Mudit Bhargava" << std::endl;
   std::cout << "Build Date: " << __DATE__ << " " << __TIME__ << std::endl;

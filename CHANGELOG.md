@@ -5,6 +5,57 @@ All notable changes to the Cache Simulator project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2026-01-09
+
+### Fixed
+- **Config Parsing snake_case Support**
+  - Added `normalizeConfigKey()` function to handle snake_case keys
+  - Config files with `block_size`, `write_policy` now parse correctly
+  - Maintains backward compatibility with camelCase keys
+
+- **Config Version Metadata**
+  - Updated all 8 example config files from `"version": "1.2.0"` to `"version": "1.4.0"`
+  - Affected: full_features.json, high_performance.json, multiprocessor_4core.json,
+    multiprocessor_system.json, nru_optimized.json, victim_cache_config.json,
+    write_intensive.json, write_optimized.json
+
+### Added
+- **JSON Schema Validation**
+  - `recognizedKeys` set for validating config key names
+  - `logUnrecognizedKey()` function warns on unknown keys with section context
+  - `findSimilarKey()` suggests correct key names for typos
+
+- **Config Integration Tests**
+  - New `tests/integration/config_parsing_test.cpp`
+  - Tests all JSON config files parse successfully
+  - Verifies snake_case normalization works correctly
+
+- **User-Defined Profiler Regions**
+  - `ProfilerRegionConfig` struct in `MemoryHierarchyConfig`
+  - Fields: `startAddress`, `endAddress`, `name`
+  - `profilerRegions` vector for custom address ranges
+
+### Changed
+- **License**: Changed from MIT to Apache License 2.0
+- Enhanced error messages now suggest correct key format
+- Added `<cstdint>` include to `memory_hierarchy.h` for `uint32_t`
+- Removed version numbers from config file name/description fields
+
+### Documentation
+- **CITATION.cff**: Added for proper GitHub citation support (APA/BibTeX)
+- **Side-Channel Research Guide**: New `docs/features/side-channel-research.md`
+  - Flush+Reload attack simulation
+  - Prime+Probe attack modeling
+  - Spectre-like pattern analysis
+  - Security research configurations
+
+### Technical Details
+- Config key normalization: `block_size` → `blockSize`
+- All 19 tests pass (including new config integration test)
+- All 5 example configs tested with real trace files
+
+---
+
 ## [1.4.0] - 2026-01-08
 
 ### Added
@@ -219,11 +270,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Support for atomic operations and memory barriers
   - Comprehensive multi-processor statistics
 - **Victim Cache Tests**: Complete unit test suite for victim cache functionality
-- **Enhanced Documentation**: 
+- **Enhanced Documentation**:
   - Comprehensive victim cache documentation
   - Complete tutorial covering all features
   - Usage examples and best practices
-- **Comprehensive Utility Scripts**: 
+- **Comprehensive Utility Scripts**:
   - Advanced build script with multiple configuration options
   - Comprehensive benchmark runner with parallel execution
   - Simulation runner with colorized output and CSV export

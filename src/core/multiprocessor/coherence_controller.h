@@ -70,7 +70,7 @@ struct CoherenceResponse {
 class DirectoryEntry {
 public:
     DirectoryEntry() : state_(MESIState::Invalid), owner_(-1), dirty_(false) {}
-    
+
     MESIState state_;
     int32_t owner_;                      ///< Exclusive/Modified owner (-1 if none)
     std::unordered_set<uint32_t> sharers_; ///< Set of processors sharing the line
@@ -90,14 +90,14 @@ public:
      * @param interconnectLatency Latency for inter-processor communication
      */
     CoherenceController(uint32_t numProcessors, uint32_t interconnectLatency);
-    
+
     /**
      * @brief Process a coherence request
      * @param request The coherence request
      * @return Response with action to take
      */
     CoherenceResponse processRequest(const CoherenceRequest& request);
-    
+
     /**
      * @brief Register a processor's cache state change
      * @param processorId Processor ID
@@ -107,7 +107,7 @@ public:
      */
     void updateCacheState(uint32_t processorId, uint32_t address,
                           MESIState oldState, MESIState newState);
-    
+
     /**
      * @brief Handle writeback from a processor
      * @param processorId Processor ID
@@ -116,7 +116,7 @@ public:
      */
     void handleWriteback(uint32_t processorId, uint32_t address,
                         const std::vector<uint8_t>& data);
-    
+
     /**
      * @brief Check if a processor can perform an operation
      * @param processorId Processor ID
@@ -125,12 +125,12 @@ public:
      * @return True if operation is allowed
      */
     bool checkPermission(uint32_t processorId, uint32_t address, bool isWrite);
-    
+
     /**
      * @brief Get current state of a cache line for a processor
      */
     [[nodiscard]] MESIState getCacheLineState(uint32_t processorId, uint32_t address) const;
-    
+
     /**
      * @brief Statistics tracking
      */
@@ -143,29 +143,29 @@ public:
         uint64_t coherenceMessages;
         std::unordered_map<std::string, uint64_t> transitionCounts;
     };
-    
+
     [[nodiscard]] CoherenceStats getStats() const;
     void resetStats();
     void printStats() const;
-    
+
     /**
      * @brief Set processor references for callbacks
      */
     void setProcessors(std::vector<ProcessorCore*> processors) {
         processors_ = processors;
     }
-    
+
 private:
     uint32_t numProcessors_;
     uint32_t interconnectLatency_;
-    
+
     // Directory tracking cache line states
     mutable std::mutex directoryMutex_;
     std::unordered_map<uint32_t, DirectoryEntry> directory_;
-    
+
     // Processor references for callbacks
     std::vector<ProcessorCore*> processors_;
-    
+
     // Statistics
     std::atomic<uint64_t> readRequests_{0};
     std::atomic<uint64_t> writeRequests_{0};
@@ -173,12 +173,12 @@ private:
     std::atomic<uint64_t> writebacks_{0};
     std::atomic<uint64_t> stateTransitions_{0};
     std::atomic<uint64_t> coherenceMessages_{0};
-    
+
     // Helper methods
     DirectoryEntry& getOrCreateEntry(uint32_t address);
     std::vector<uint32_t> invalidateSharers(uint32_t address, uint32_t excludeProcessor);
     void broadcastInvalidate(uint32_t address, const std::vector<uint32_t>& processors);
-    uint32_t calculateLatency(const CoherenceRequest& request, 
+    uint32_t calculateLatency(const CoherenceRequest& request,
                              const std::vector<uint32_t>& involvedProcessors);
     std::string getTransitionKey(MESIState from, MESIState to) const;
 };
@@ -190,22 +190,22 @@ private:
 class SnoopingController : public CoherenceController {
 public:
     SnoopingController(uint32_t numProcessors, uint32_t busLatency);
-    
+
     /**
      * @brief Broadcast snoop request on the bus
      */
     CoherenceResponse broadcastSnoop(const CoherenceRequest& request);
-    
+
     /**
      * @brief Handle snoop response from a processor
      */
     void handleSnoopResponse(uint32_t processorId, const CoherenceRequest& request,
                            bool hasData, MESIState state);
-    
+
 private:
     uint32_t busLatency_;
     std::atomic<bool> busLocked_{false};
-    
+
     // Snoop responses tracking
     struct SnoopTransaction {
         CoherenceRequest request;
@@ -213,7 +213,7 @@ private:
         std::unordered_set<uint32_t> dataProviders;
         std::mutex mutex;
     };
-    
+
     std::unordered_map<uint64_t, SnoopTransaction> activeTransactions_;
     std::atomic<uint64_t> transactionId_{0};
 };

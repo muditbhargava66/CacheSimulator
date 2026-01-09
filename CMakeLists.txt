@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(CacheSimulator VERSION 1.4.0 LANGUAGES CXX)
+project(CacheSimulator VERSION 1.4.1 LANGUAGES CXX)
 
 # Set C++20 as the required standard (required for designated initializers)
 set(CMAKE_CXX_STANDARD 20)
@@ -22,15 +22,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Common compiler flags
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic -Werror=return-type)
-    
+
     # Add debug flags
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -O0")
-    
+
     # Add release flags
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 elseif(MSVC)
     add_compile_options(/W4 /permissive- /Zc:__cplusplus)
-    
+
     # Enable exceptions
     add_compile_options(/EHsc)
 endif()
@@ -190,16 +190,16 @@ if(DOXYGEN_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/docs/Doxyfile.in")
     set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/docs)
     set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/html/index.html)
     set(DOXYGEN_CONFIG_FILE ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
-    
+
     configure_file(${PROJECT_SOURCE_DIR}/docs/Doxyfile.in ${DOXYGEN_CONFIG_FILE} @ONLY)
-    
+
     add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
         COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_CONFIG_FILE}
         MAIN_DEPENDENCY ${DOXYGEN_CONFIG_FILE} ${ALL_HEADERS}
         COMMENT "Generating API documentation with Doxygen"
         VERBATIM
     )
-    
+
     add_custom_target(doc DEPENDS ${DOXYGEN_INDEX_FILE})
 endif()
 

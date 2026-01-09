@@ -11,7 +11,7 @@
  * visualization options.
  *
  * @copyright Copyright (c) 2026 Mudit Bhargava. All rights reserved.
- * @license MIT License
+ * @license Apache License 2.0
  */
 
 #include <algorithm>

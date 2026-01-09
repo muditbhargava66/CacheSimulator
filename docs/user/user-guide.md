@@ -104,7 +104,7 @@ for (uint32_t addr = 0x1000; addr < 0x2000; addr += 64) {
 std::mt19937 rng(42);
 std::uniform_int_distribution<uint32_t> dist(0x1000, 0x10000);
 for (int i = 0; i < 1000; ++i) {
-    trace << (i % 4 == 0 ? "w " : "r ") 
+    trace << (i % 4 == 0 ? "w " : "r ")
           << "0x" << std::hex << (dist(rng) & ~63) << std::endl;
 }
 ```
@@ -120,7 +120,7 @@ for (int i = 0; i < 1000; ++i) {
 # With visualization
 ./cachesim --visualize traces/workload.txt
 
-# Parallel simulation (v1.2.0)
+# Parallel simulation
 ./cachesim -p 4 traces/large_workload.txt
 
 # Export results
@@ -371,12 +371,12 @@ system.globalBarrier();
 
 Output example:
 ```
-╔══════════════════ L1 Cache State ═══════════════════╗
-║ Set │ Way │     Tag     │ Valid │ Dirty │   Address   │
+╔══════════════════ L1 Cache State ═════════════════════╗
+║ Set │ Way │     Tag     │ Valid │ Dirty │   Address   ║
 ╠═════╪═════╪═════════════╪═══════╪═══════╪═════════════╣
-║   0 │   0 │ 0x000000100 │  Yes  │  No   │ 0x00001000  │
-║   0 │   1 │ 0x000000200 │  Yes  │  Yes  │ 0x00002000  │
-║   1 │   0 │ 0x000000140 │  Yes  │  No   │ 0x00001400  │
+║   0 │   0 │ 0x000000100 │  Yes  │  No   │ 0x00001000  ║
+║   0 │   1 │ 0x000000200 │  Yes  │  Yes  │ 0x00002000  ║
+║   1 │   0 │ 0x000000140 │  Yes  │  No   │ 0x00001400  ║
 ╚═══════════════════════════════════════════════════════╝
 ```
 
@@ -393,7 +393,7 @@ std::vector<std::pair<std::string, double>> hitRates = {
 std::cout << Visualization::generateHistogram(hitRates, 50, true);
 
 // Memory access heatmap
-std::cout << Visualization::generateHeatmap(accessMatrix, 
+std::cout << Visualization::generateHeatmap(accessMatrix,
                                           rowLabels, colLabels);
 
 // Miss rate over time
