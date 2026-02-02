@@ -17,31 +17,32 @@ enum class MESIState {
 class MESIProtocol {
 public:
     MESIProtocol();
-    
+
     // State transitions
     MESIState handleLocalRead(MESIState currentState, bool otherCachesHaveCopy);
     MESIState handleLocalWrite(MESIState currentState);
     MESIState handleRemoteRead(MESIState currentState);
     MESIState handleRemoteWrite(MESIState currentState);
     MESIState handleEviction(MESIState currentState);
-    
+
     // State queries
     [[nodiscard]] bool requiresWriteback(MESIState state) const;
     [[nodiscard]] bool isValid(MESIState state) const;
     [[nodiscard]] bool isModified(MESIState state) const;
-    
+
     // State to string for debugging
     [[nodiscard]] std::string_view stateToString(MESIState state) const;
-    
+
     // Stats tracking
     void recordStateTransition(MESIState from, MESIState to);
     void printStats() const;
     void resetStats();
+    [[nodiscard]] int getTransitionCount(MESIState from, MESIState to) const;
 
 private:
     // Statistics
     int transitionCount[4][4]; // From state -> To state transitions
-    
+
     // Internal helper methods
     int stateToIndex(MESIState state) const;
 };

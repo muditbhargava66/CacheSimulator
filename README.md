@@ -2,7 +2,7 @@
 
 # Cache Simulator
 
-![Version](https://img.shields.io/badge/version-1.4.1-blue)
+![Version](https://img.shields.io/badge/version-1.4.2-blue)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-orange)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)

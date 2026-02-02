@@ -2,8 +2,8 @@
  * @file coherence_protocol_test.cpp
  * @brief Unit tests for coherence protocols (MSI, MESI, MOESI)
  * @author Mudit Bhargava
- * @date 2026-01-07
- * @version 1.4.0
+ * @date 2026-02-02
+ * @version 1.4.2
  */
 
 #include <cassert>
@@ -11,6 +11,7 @@
 #include <memory>
 
 #include "core/coherence_protocol.h"
+#include "core/mesi_protocol.h"
 #include "core/moesi_protocol.h"
 #include "core/msi_protocol.h"
 
@@ -28,6 +29,7 @@ public:
 
     testMSIProtocol();
     testMOESIProtocol();
+    testMESIStatistics();
     testProtocolFactory();
 
     std::cout << "\nAll coherence protocol tests passed!" << std::endl;
@@ -112,6 +114,41 @@ private:
 
     std::cout << "  MOESI protocol transitions: PASSED" << std::endl;
     std::cout << "  MOESI Owned state behavior: PASSED" << std::endl;
+  }
+
+  /**
+   * @brief Test MESI statistics recording
+   *
+   * This test verifies that MESIProtocol::recordStateTransition() correctly
+   * updates the state transition counts when called.
+   */
+  static void testMESIStatistics() {
+    std::cout << "\n[TEST] MESI Statistics Recording" << std::endl;
+
+    MESIProtocol mesi;
+
+    // Record some state transitions
+    mesi.recordStateTransition(MESIState::Invalid, MESIState::Exclusive);
+    mesi.recordStateTransition(MESIState::Invalid, MESIState::Modified);
+    mesi.recordStateTransition(MESIState::Exclusive, MESIState::Modified);
+    mesi.recordStateTransition(MESIState::Shared, MESIState::Modified);
+
+    // Verify transitions are recorded using getTransitionCount
+    assert(mesi.getTransitionCount(MESIState::Invalid, MESIState::Exclusive) == 1 &&
+           "Invalid->Exclusive should be 1");
+    assert(mesi.getTransitionCount(MESIState::Invalid, MESIState::Modified) == 1 &&
+           "Invalid->Modified should be 1");
+    assert(mesi.getTransitionCount(MESIState::Exclusive, MESIState::Modified) == 1 &&
+           "Exclusive->Modified should be 1");
+    assert(mesi.getTransitionCount(MESIState::Shared, MESIState::Modified) == 1 &&
+           "Shared->Modified should be 1");
+
+    // Verify that non-recorded transitions are zero
+    assert(mesi.getTransitionCount(MESIState::Modified, MESIState::Shared) == 0 &&
+           "Modified->Shared should be 0 (not recorded)");
+
+    std::cout << "  MESI state transitions recorded: PASSED" << std::endl;
+    std::cout << "  MESI transition counts correct: PASSED" << std::endl;
   }
 
   static void testProtocolFactory() {

@@ -84,6 +84,20 @@ Generates synthetic memory access traces for testing and benchmarking.
 - `--region-size`: Size of each region in bytes
 - `--locality`: Locality probability (0.0-1.0)
 - `--seed`: Random seed for reproducibility
+- `--processors`: Number of processors (enables multiprocessor format)
+
+#### Multiprocessor Trace Format (v1.4.2)
+The trace generator can output multiprocessor format traces using the `--processors` option:
+
+```bash
+# Generate 4-processor trace (10000 accesses)
+./bin/tools/trace_generator --processors 4 -n 10000 --output mp_trace.txt
+
+# Generate 8-processor random trace
+./bin/tools/trace_generator --processors 8 -p random -n 50000 --output mp_random.txt
+```
+
+Output format: `PX r/w 0xADDR` (e.g., `P0 r 0x1000`, `P3 w 0x2000`)
 
 ## Building the Tools
 

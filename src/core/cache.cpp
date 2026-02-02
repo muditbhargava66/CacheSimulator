@@ -90,7 +90,10 @@ bool Cache::access(uint32_t address, bool isWrite,
       } else {
         // Write-back: mark block as dirty and modified
         block.dirty = true;
+        MESIState oldState = block.mesiState;
         block.mesiState = MESIState::Modified;
+        // Record the state transition for statistics
+        mesiProtocol.recordStateTransition(oldState, MESIState::Modified);
       }
     }
 
@@ -192,14 +195,17 @@ void Cache::installBlock(uint32_t address, int setIndex, int blockIndex,
   block.lastAccess = globalAccessCounter.fetch_add(1);
   block.prefetched = isPrefetch;
 
-  // Set MESI state based on access type
+  // Set MESI state based on access type (transition from Invalid to new state)
+  MESIState oldState = block.mesiState;  // Will be Invalid for newly installed block
   if (isWrite) {
     block.mesiState = MESIState::Modified;
+    mesiProtocol.recordStateTransition(oldState, MESIState::Modified);
   } else {
     // If no other caches have this block, it's Exclusive
     // Otherwise, it's Shared (in a multi-cache system)
     // For simplicity, we assume it's Exclusive here
     block.mesiState = MESIState::Exclusive;
+    mesiProtocol.recordStateTransition(oldState, MESIState::Exclusive);
   }
 }
 

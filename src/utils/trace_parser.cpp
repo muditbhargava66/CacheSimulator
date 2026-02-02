@@ -222,11 +222,22 @@ ParseResult TraceParser::parseLine(std::string_view line) {
     return ParseErrorType::UnknownError;
   }
 
-  // Check if there's a third token (multiprocessor format)
+  // Check if there's a third token (multiprocessor format: PX r/w 0xADDR)
   std::string accessType, addressStr;
+  std::optional<uint32_t> coreId = std::nullopt;
+
   if (iss >> token3) {
     // Three tokens: processor_id access_type address
-    // token1 = processor_id (ignored for now)
+    // Parse processor ID from format "P0", "P1", etc.
+    if (token1.size() >= 2 && (token1[0] == 'P' || token1[0] == 'p')) {
+      std::string coreIdStr = token1.substr(1);
+      uint32_t parsedCoreId = 0;
+      auto result = std::from_chars(
+          coreIdStr.c_str(), coreIdStr.c_str() + coreIdStr.size(), parsedCoreId, 10);
+      if (result.ec == std::errc()) {
+        coreId = parsedCoreId;
+      }
+    }
     accessType = token2;
     addressStr = token3;
   } else {
@@ -251,6 +262,10 @@ ParseResult TraceParser::parseLine(std::string_view line) {
     return ParseErrorType::InvalidAddressFormat;
   }
 
+  // Return MemoryAccess with or without coreId
+  if (coreId.has_value()) {
+    return MemoryAccess(isWrite, *address, *coreId);
+  }
   return MemoryAccess(isWrite, *address);
 }
 

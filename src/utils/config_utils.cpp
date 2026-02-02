@@ -80,8 +80,8 @@ static std::string findSimilarKey(const std::string &key) {
   return bestMatch;
 }
 
-// Helper to log unrecognized keys with format suggestions
-static void logUnrecognizedKey(const std::string &section,
+// Helper to log unrecognized keys with format suggestions (reserved for future use)
+[[maybe_unused]] static void logUnrecognizedKey(const std::string &section,
                                const std::string &key,
                                const std::string &originalKey) {
   // Only log if key is not recognized
@@ -608,7 +608,6 @@ ConfigManager::parseJsonConfig(const std::filesystem::path &configPath) {
   config.name = "JSON Configuration";
 
   std::string currentSection;
-  bool inObject = false;
 
   // Enhanced JSON parser to handle nested objects
   while (std::getline(file, line)) {
@@ -623,7 +622,6 @@ ConfigManager::parseJsonConfig(const std::filesystem::path &configPath) {
 
     // Handle object start/end
     if (line == "{") {
-      inObject = true;
       continue;
     } else if (line == "}," || line == "}") {
       if (!currentSection.empty()) {
