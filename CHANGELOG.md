@@ -5,6 +5,37 @@ All notable changes to the Cache Simulator project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.2] - 2026-02-02
+
+### Fixed
+- **MESI Statistics Not Shown** (GitHub Issue #16)
+  - Added `recordStateTransition()` calls at all MESI state change points in `cache.cpp`
+  - Write hits now properly record state transitions to Modified
+  - Block installation now records transitions from Invalid to Modified/Exclusive
+  - MESI state transition matrix is now correctly populated during simulation
+
+### Added
+- **Multiprocessor Trace Format Support**
+  - `MemoryAccess` struct now includes optional `coreId` field
+  - `TraceParser::parseLine()` extracts core ID from `PX r/w 0xADDR` format (e.g., `P0 r 0x1000`)
+  - Enables multi-core trace simulation with proper processor identification
+
+- **Trace Generator Multiprocessor Output**
+  - New `--processors <count>` option for generating multiprocessor traces
+  - Output uses `PX r/w 0xADDR` format compatible with multi-core simulator
+  - Randomly distributes accesses across specified processors
+
+- **MESI Statistics Unit Test**
+  - Added `testMESIStatistics()` to `coherence_protocol_test.cpp`
+  - Verifies `recordStateTransition()` correctly updates transition counts
+  - Added `getTransitionCount()` getter to `MESIProtocol` class
+
+### Changed
+- Version updated to v1.4.2 in CLI, build scripts, and documentation
+- **Code Quality Improvements**
+  - Removed unused `inObject` variable in `config_utils.cpp`
+  - Added `[[maybe_unused]]` attribute to reserved `logUnrecognizedKey()` function
+
 ## [1.4.1] - 2026-01-09
 
 ### Fixed

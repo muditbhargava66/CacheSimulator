@@ -17,7 +17,7 @@ MESIProtocol::MESIProtocol() {
 
 MESIState MESIProtocol::handleLocalRead(MESIState currentState, bool otherCachesHaveCopy) {
     MESIState nextState = currentState;
-    
+
     switch (currentState) {
         case MESIState::Invalid:
             // Cache miss, need to fetch from memory
@@ -25,7 +25,7 @@ MESIState MESIProtocol::handleLocalRead(MESIState currentState, bool otherCaches
             // Otherwise, transition to Exclusive
             nextState = otherCachesHaveCopy ? MESIState::Shared : MESIState::Exclusive;
             break;
-            
+
         case MESIState::Modified:
         case MESIState::Exclusive:
         case MESIState::Shared:
@@ -33,68 +33,68 @@ MESIState MESIProtocol::handleLocalRead(MESIState currentState, bool otherCaches
             nextState = currentState;
             break;
     }
-    
+
     recordStateTransition(currentState, nextState);
     return nextState;
 }
 
 MESIState MESIProtocol::handleLocalWrite(MESIState currentState) {
     MESIState nextState = MESIState::Modified;
-    
+
     switch (currentState) {
         case MESIState::Invalid:
             // Cache miss, need to fetch from memory and invalidate copies in other caches
             nextState = MESIState::Modified;
             break;
-            
+
         case MESIState::Shared:
             // Need to invalidate copies in other caches
             nextState = MESIState::Modified;
             break;
-            
+
         case MESIState::Exclusive:
             // Already exclusive, just mark as modified
             nextState = MESIState::Modified;
             break;
-            
+
         case MESIState::Modified:
             // Already modified, stay in current state
             nextState = MESIState::Modified;
             break;
     }
-    
+
     recordStateTransition(currentState, nextState);
     return nextState;
 }
 
 MESIState MESIProtocol::handleRemoteRead(MESIState currentState) {
     MESIState nextState = currentState;
-    
+
     switch (currentState) {
         case MESIState::Modified:
             // Need to provide the modified data and downgrade to Shared
             nextState = MESIState::Shared;
             break;
-            
+
         case MESIState::Exclusive:
             // Need to downgrade to Shared
             nextState = MESIState::Shared;
             break;
-            
+
         case MESIState::Shared:
         case MESIState::Invalid:
             // No change needed
             nextState = currentState;
             break;
     }
-    
+
     recordStateTransition(currentState, nextState);
     return nextState;
 }
 
 MESIState MESIProtocol::handleRemoteWrite(MESIState currentState) {
     MESIState nextState = MESIState::Invalid;
-    
+
     // Any remote write invalidates the local copy
     recordStateTransition(currentState, nextState);
     return nextState;
@@ -102,7 +102,7 @@ MESIState MESIProtocol::handleRemoteWrite(MESIState currentState) {
 
 MESIState MESIProtocol::handleEviction(MESIState currentState) {
     MESIState nextState = MESIState::Invalid;
-    
+
     // Any eviction results in Invalid state
     recordStateTransition(currentState, nextState);
     return nextState;
@@ -163,16 +163,16 @@ void MESIProtocol::recordStateTransition(MESIState from, MESIState to) {
 
 void MESIProtocol::printStats() const {
     std::cout << "MESI Protocol State Transitions:" << std::endl;
-    
+
     const char* stateNames[4] = {"Modified", "Exclusive", "Shared", "Invalid"};
-    
+
     // Print header
     std::cout << "From\\To  ";
     for (int j = 0; j < 4; ++j) {
         std::cout << stateNames[j] << "\t";
     }
     std::cout << std::endl;
-    
+
     // Print transition counts
     for (int i = 0; i < 4; ++i) {
         std::cout << stateNames[i] << "\t";
@@ -189,6 +189,12 @@ void MESIProtocol::resetStats() {
             transitionCount[i][j] = 0;
         }
     }
+}
+
+int MESIProtocol::getTransitionCount(MESIState from, MESIState to) const {
+    int fromIdx = stateToIndex(from);
+    int toIdx = stateToIndex(to);
+    return transitionCount[fromIdx][toIdx];
 }
 
 } // namespace cachesim

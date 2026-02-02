@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(CacheSimulator VERSION 1.4.1 LANGUAGES CXX)
+project(CacheSimulator VERSION 1.4.2 LANGUAGES CXX)
 
 # Set C++20 as the required standard (required for designated initializers)
 set(CMAKE_CXX_STANDARD 20)
@@ -205,7 +205,6 @@ endif()
 
 # Package configuration
 set(CPACK_PACKAGE_NAME "cachesim")
-set(CPACK_PACKAGE_VENDOR "Your Organization")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Cache and Memory Hierarchy Simulator")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})

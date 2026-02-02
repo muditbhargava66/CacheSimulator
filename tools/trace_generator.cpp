@@ -41,10 +41,13 @@ struct GenerationParams {
     size_t localityRegions = 5;     // Number of locality regions for mixed pattern
     uint32_t regionSize = 4096;     // Size of each region in bytes
     double localityProbability = 0.8; // Probability of staying in the current region
-    
+
+    // Multiprocessor support
+    uint32_t numProcessors = 0;     // 0 = single processor (no PX prefix), >0 = multiprocessor
+
     // Optional seed for random number generator (for reproducibility)
     std::optional<uint32_t> seed;
-    
+
     // Only include selected patterns in mixed mode
     std::vector<AccessPattern> includedPatterns = {
         AccessPattern::Sequential,
@@ -62,70 +65,70 @@ uint32_t generateAddress(AccessPattern pattern, size_t index, const GenerationPa
             // Simple sequential pattern
             return params.startAddress + (index * params.stride);
         }
-        
+
         case AccessPattern::Strided: {
             // Strided pattern with configurable stride
             return params.startAddress + (index * params.stride * 2);
         }
-        
+
         case AccessPattern::Random: {
             // Uniform random distribution between start and end
-            std::uniform_int_distribution<uint32_t> dist(params.startAddress, 
+            std::uniform_int_distribution<uint32_t> dist(params.startAddress,
                                                       params.endAddress - 1);
             // Align to stride boundary
             return (dist(rng) / params.stride) * params.stride;
         }
-        
+
         case AccessPattern::Looping: {
             // Looping pattern repeats a sequence
             size_t position = index % params.loopSize;
             size_t iteration = index / params.loopSize;
-            
+
             // If first iteration or state is empty, generate new address
             if (iteration == 0 || state.size() <= position) {
                 uint32_t address = params.startAddress + (position * params.stride);
-                
+
                 // Store address in state if first iteration
                 if (iteration == 0) {
                     state.push_back(address);
                 }
-                
+
                 return address;
             } else {
                 // Return previously stored address
                 return state[position];
             }
         }
-        
+
         case AccessPattern::MixedWithLocality: {
             // Mixed access pattern with locality
-            
+
             // If state is empty, initialize with region information
             if (state.empty()) {
                 // Store current region index and reference address
                 state = {0, params.startAddress};
             }
-            
+
             uint32_t currentRegion = state[0];
             uint32_t lastAddress = state[1];
-            
+
             // Decide whether to stay in current region or switch
             std::uniform_real_distribution<double> probDist(0.0, 1.0);
             bool stayInRegion = probDist(rng) < params.localityProbability;
-            
+
             if (!stayInRegion) {
                 // Switch to a different region
                 std::uniform_int_distribution<uint32_t> regionDist(0, params.localityRegions - 1);
                 currentRegion = regionDist(rng);
                 state[0] = currentRegion;
             }
-            
+
             // Calculate region base address
             uint32_t regionBase = params.startAddress + (currentRegion * params.regionSize);
-            
+
             // Generate address within the region
             uint32_t address;
-            
+
             if (stayInRegion && (index > 0) && (probDist(rng) < 0.7)) {
                 // 70% chance of accessing nearby addresses if staying in region
                 std::normal_distribution<double> nearbyDist(0, params.stride * 2);
@@ -134,9 +137,9 @@ uint32_t generateAddress(AccessPattern pattern, size_t index, const GenerationPa
                 offset = std::max<int32_t>(0, std::min<int32_t>(offset, params.regionSize - params.stride));
                 // Align to stride
                 offset = (offset / params.stride) * params.stride;
-                
+
                 address = lastAddress + offset;
-                
+
                 // Ensure address is within region
                 if (address < regionBase || address >= regionBase + params.regionSize) {
                     address = regionBase + (std::abs(offset) % params.regionSize);
@@ -147,13 +150,13 @@ uint32_t generateAddress(AccessPattern pattern, size_t index, const GenerationPa
                 uint32_t offset = (addrDist(rng) / params.stride) * params.stride;
                 address = regionBase + offset;
             }
-            
+
             // Update last address
             state[1] = address;
-            
+
             return address;
         }
-        
+
         default:
             // Default to sequential
             return params.startAddress + (index * params.stride);
@@ -169,53 +172,62 @@ bool generateTrace(const GenerationParams& params) {
             std::cerr << "Error: Could not open output file " << params.outputFile << std::endl;
             return false;
         }
-        
+
         // Initialize random number generator
         std::random_device rd;
         std::mt19937 rng(params.seed.value_or(rd()));
-        
+
         // Distribution for determining read/write
         std::uniform_real_distribution<double> writeDist(0.0, 1.0);
-        
+
         // Vector to store state for patterns that need it (like looping)
         std::vector<uint32_t> state;
-        
+
         // Vectors for each mixed pattern type
         std::vector<std::vector<uint32_t>> mixedStates;
         if (params.pattern == AccessPattern::MixedWithLocality) {
             mixedStates.resize(params.includedPatterns.size());
         }
-        
+
         // Generate memory accesses
         for (size_t i = 0; i < params.numAccesses; ++i) {
             // Determine read or write
             bool isWrite = writeDist(rng) < params.writeRatio;
-            
+
             // Generate address based on pattern
             uint32_t address;
-            
+
             if (params.pattern == AccessPattern::MixedWithLocality) {
                 // For mixed pattern, choose one of the included patterns
                 std::uniform_int_distribution<size_t> patternDist(0, params.includedPatterns.size() - 1);
                 size_t patternIndex = patternDist(rng);
                 auto pattern = params.includedPatterns[patternIndex];
-                
+
                 // Generate address using the selected pattern
                 address = generateAddress(pattern, i, params, rng, mixedStates[patternIndex]);
             } else {
                 // Use the main pattern
                 address = generateAddress(params.pattern, i, params, rng, state);
             }
-            
-            // Write to file
-            outFile << (isWrite ? "w " : "r ") << "0x" << std::hex << address << std::dec << std::endl;
+
+            // Write to file with optional processor ID prefix (multiprocessor format)
+            if (params.numProcessors > 0) {
+                // Multiprocessor format: PX r/w 0xADDR
+                std::uniform_int_distribution<uint32_t> procDist(0, params.numProcessors - 1);
+                uint32_t processorId = procDist(rng);
+                outFile << "P" << processorId << " " << (isWrite ? "w " : "r ")
+                        << "0x" << std::hex << address << std::dec << std::endl;
+            } else {
+                // Single processor format: r/w 0xADDR
+                outFile << (isWrite ? "w " : "r ") << "0x" << std::hex << address << std::dec << std::endl;
+            }
         }
-        
+
         outFile.close();
-        
-        std::cout << "Generated " << params.numAccesses << " memory accesses in " 
+
+        std::cout << "Generated " << params.numAccesses << " memory accesses in "
                   << params.outputFile << std::endl;
-        
+
         // Print pattern information
         std::cout << "Pattern: ";
         switch (params.pattern) {
@@ -229,18 +241,23 @@ bool generateTrace(const GenerationParams& params) {
                 std::cout << "Random";
                 break;
             case AccessPattern::Looping:
-                std::cout << "Looping (size=" << params.loopSize 
+                std::cout << "Looping (size=" << params.loopSize
                           << ", repetitions=" << params.repetitions << ")";
                 break;
             case AccessPattern::MixedWithLocality:
-                std::cout << "Mixed with Locality (regions=" << params.localityRegions 
+                std::cout << "Mixed with Locality (regions=" << params.localityRegions
                           << ", region size=" << params.regionSize << ")";
                 break;
         }
         std::cout << std::endl;
-        
+
         std::cout << "Write ratio: " << (params.writeRatio * 100) << "%" << std::endl;
-        
+
+        // Print multiprocessor info if enabled
+        if (params.numProcessors > 0) {
+            std::cout << "Multiprocessor mode: " << params.numProcessors << " processors" << std::endl;
+        }
+
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Error generating trace: " << e.what() << std::endl;
@@ -267,12 +284,15 @@ void printUsage(const std::string& programName) {
     std::cout << "  --region-size <size>       Size of each region in bytes (default: 4096)" << std::endl;
     std::cout << "  --locality <probability>   Locality probability (0.0-1.0) (default: 0.8)" << std::endl;
     std::cout << "  --seed <value>             Random seed for reproducibility" << std::endl;
+    std::cout << "  --processors <count>       Number of processors for multiprocessor traces (v1.4.2)" << std::endl;
+    std::cout << "                             Uses PX r/w 0xADDR format (e.g., P0 r 0x1000)" << std::endl;
     std::cout << "  -h, --help                 Display this help message" << std::endl;
     std::cout << std::endl;
     std::cout << "Examples:" << std::endl;
     std::cout << "  " << programName << " -o sequential.txt -p sequential -n 5000" << std::endl;
     std::cout << "  " << programName << " -o random.txt -p random --stride 128 -w 0.5" << std::endl;
     std::cout << "  " << programName << " -o loop.txt -p looping --loop-size 20 --repetitions 10" << std::endl;
+    std::cout << "  " << programName << " -o mp_trace.txt --processors 4 -n 10000  # Multiprocessor trace" << std::endl;
 }
 
 // Helper for parsing command line arguments
@@ -281,13 +301,13 @@ std::optional<GenerationParams> parseCommandLine(int argc, char* argv[]) {
         printUsage(argv[0]);
         return GenerationParams{};  // Return default parameters
     }
-    
+
     GenerationParams params;
-    
+
     // Parse command line arguments
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
-        
+
         if (arg == "-h" || arg == "--help") {
             printUsage(argv[0]);
             return std::nullopt;
@@ -365,13 +385,17 @@ std::optional<GenerationParams> parseCommandLine(int argc, char* argv[]) {
             if (i + 1 < argc) {
                 params.seed = std::stoul(argv[++i]);
             }
+        } else if (arg == "--processors") {
+            if (i + 1 < argc) {
+                params.numProcessors = std::stoul(argv[++i]);
+            }
         } else {
             std::cerr << "Error: Unknown option '" << arg << "'" << std::endl;
             printUsage(argv[0]);
             return std::nullopt;
         }
     }
-    
+
     return params;
 }
 
@@ -380,18 +404,18 @@ bool generateStandardTraces(const std::string& directory) {
     try {
         // Create directory if it doesn't exist
         fs::create_directories(directory);
-        
+
         // Base parameters
         GenerationParams params;
         params.numAccesses = 1000;
-        
+
         // Sequential trace
         params.pattern = AccessPattern::Sequential;
         params.outputFile = directory + "/trace_sequential.txt";
         if (!generateTrace(params)) {
             return false;
         }
-        
+
         // Strided trace
         params.pattern = AccessPattern::Strided;
         params.stride = 64;
@@ -399,14 +423,14 @@ bool generateStandardTraces(const std::string& directory) {
         if (!generateTrace(params)) {
             return false;
         }
-        
+
         // Random trace
         params.pattern = AccessPattern::Random;
         params.outputFile = directory + "/trace_random.txt";
         if (!generateTrace(params)) {
             return false;
         }
-        
+
         // Looping trace
         params.pattern = AccessPattern::Looping;
         params.loopSize = 20;
@@ -415,7 +439,7 @@ bool generateStandardTraces(const std::string& directory) {
         if (!generateTrace(params)) {
             return false;
         }
-        
+
         // Mixed with locality trace
         params.pattern = AccessPattern::MixedWithLocality;
         params.localityRegions = 5;
@@ -424,7 +448,7 @@ bool generateStandardTraces(const std::string& directory) {
         if (!generateTrace(params)) {
             return false;
         }
-        
+
         // Write-heavy trace (80% writes)
         params.pattern = AccessPattern::Sequential;
         params.writeRatio = 0.8;
@@ -432,7 +456,7 @@ bool generateStandardTraces(const std::string& directory) {
         if (!generateTrace(params)) {
             return false;
         }
-        
+
         // Read-only trace (0% writes)
         params.pattern = AccessPattern::Sequential;
         params.writeRatio = 0.0;
@@ -440,10 +464,10 @@ bool generateStandardTraces(const std::string& directory) {
         if (!generateTrace(params)) {
             return false;
         }
-        
-        std::cout << "Successfully generated all standard trace patterns in " 
+
+        std::cout << "Successfully generated all standard trace patterns in "
                   << directory << std::endl;
-        
+
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Error generating standard traces: " << e.what() << std::endl;
@@ -460,18 +484,18 @@ int main(int argc, char* argv[]) {
             std::string directory = (argc > 2) ? argv[2] : "traces";
             return trace_generator::generateStandardTraces(directory) ? 0 : 1;
         }
-        
+
         // Parse command line arguments
         auto params = trace_generator::parseCommandLine(argc, argv);
-        
+
         // If help was requested or parsing failed, exit
         if (!params) {
             return (argc > 1 && std::string(argv[1]) == "-h") ? 0 : 1;
         }
-        
+
         // Generate trace file
         bool success = trace_generator::generateTrace(*params);
-        
+
         return success ? 0 : 1;
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
