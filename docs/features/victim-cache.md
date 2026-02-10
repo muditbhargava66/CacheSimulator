@@ -16,12 +16,16 @@ The victim cache is a small, fully-associative cache that stores recently evicte
 
 ### Block Structure
 ```cpp
+namespace cachesim {
+
 struct VictimBlock {
     uint64_t address;    // Full memory address
     uint64_t tag;        // Tag bits for identification
     bool valid;          // Valid bit
     bool dirty;          // Dirty bit (needs writeback)
 };
+
+} // namespace cachesim
 ```
 
 ### Main Components
@@ -75,15 +79,15 @@ if (victimCache && !l1Hit) {
     if (victimBlock) {
         // Hit in victim cache
         hits++;
-        
+
         // Install in L1 (may evict another block)
         auto evicted = l1Cache.installBlock(victimBlock);
-        
+
         // Put evicted block in victim cache
         if (evicted) {
             victimCache->insertBlock(*evicted);
         }
-        
+
         return true; // Hit
     }
 }
@@ -103,11 +107,11 @@ if (victimCache && !l1Hit) {
 
 ### Benchmark Results
 
-| Configuration | Miss Rate | With Victim Cache | Improvement |
-|--------------|-----------|-------------------|-------------|
-| Direct-mapped 4KB | 15.2% | 11.8% | 22.4% |
-| 2-way 8KB | 8.7% | 7.2% | 17.2% |
-| 4-way 16KB | 5.1% | 4.6% | 9.8% |
+| Configuration     | Miss Rate | With Victim Cache | Improvement |
+| ----------------- | --------- | ----------------- | ----------- |
+| Direct-mapped 4KB | 15.2%     | 11.8%             | 22.4%       |
+| 2-way 8KB         | 8.7%      | 7.2%              | 17.2%       |
+| 4-way 16KB        | 5.1%      | 4.6%              | 9.8%        |
 
 ## Implementation Details
 
@@ -185,14 +189,14 @@ class CacheWithVictim {
 private:
     Cache mainCache;
     VictimCache victimCache;
-    
+
 public:
     bool access(uint32_t address, bool isWrite) {
         // Try main cache first
         if (mainCache.probe(address)) {
             return true; // Hit
         }
-        
+
         // Check victim cache
         auto victimHit = victimCache.searchAndRemove(address);
         if (victimHit) {
@@ -203,17 +207,17 @@ public:
             }
             return true;
         }
-        
+
         // Miss in both - fetch from next level
         fetchFromNextLevel(address);
-        
+
         // Install in main cache
         auto evicted = mainCache.installBlock(address, isWrite);
         if (evicted) {
             // Place evicted block in victim cache
             victimCache.insertBlock(evicted->toVictimBlock());
         }
-        
+
         return false; // Miss
     }
 };

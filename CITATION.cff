@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 type: software
 title: "Cache Simulator"
-version: 1.4.2
+version: 1.4.3
 abstract: "A high-performance, educational cache simulator for analyzing memory hierarchy behavior with support for multi-level caches, coherence protocols, and advanced prefetching strategies."
 authors:
   - family-names: "Bhargava"

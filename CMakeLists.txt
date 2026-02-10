@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(CacheSimulator VERSION 1.4.2 LANGUAGES CXX)
+project(CacheSimulator VERSION 1.4.3 LANGUAGES CXX)
 
 # Set C++20 as the required standard (required for designated initializers)
 set(CMAKE_CXX_STANDARD 20)
