@@ -5,6 +5,49 @@ All notable changes to the Cache Simulator project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.3] - 2026-02-10
+
+### Fixed
+- **Cache Associativity Bug** (Critical)
+  - `findVictim()` now prefers empty (invalid) blocks before consulting the replacement policy
+  - Previously the cache used only 1 way per set regardless of associativity, causing hit ratio to **decrease** with increasing associativity
+  - `getTagAndSet()` now uses standard tag decomposition (`tag = blockNumber / numSets`) instead of storing the full block number as the tag, fixing incorrect writeback addresses
+
+- **PLRU Replacement Policy**
+  - Replaced floating-point `std::log2()` with integer bit-scan loop to prevent silent truncation (e.g. `log2(8)` returning `2.999` → `2`)
+  - Added power-of-2 assertion in constructor since the tree structure requires it
+  - Added missing `#include <cassert>`
+
+- **Victim Cache `getAllValidAddresses()`**
+  - Replaced `std::transform` + `std::remove(0)` with a simple validity-checked loop
+  - Previously, a legitimate cache block at address 0 would be silently dropped
+
+- **Victim Cache `invalidateBlocksInRange()`**
+  - Changed from `std::remove_if` + `erase` (which physically removes elements) to in-place invalidation
+  - The old approach corrupted `fifoQueue` and `addressToIndex` indices, causing incorrect evictions or crashes on subsequent operations
+
+### Changed
+- **Dead Code Removal**: Removed unused `lruOrder`, `fifoOrder`, and `nextFifoIndex` fields from `CacheSet` in `cache_block.h` and their initialization in `cache.cpp` — all replacement logic uses `ReplacementPolicyBase` instances
+- **Namespace Cleanup**: Moved `VictimBlock` and `VictimCache` into `namespace cachesim`; removed dead `CacheSimulator` demo class from `victim_cache.h`
+- **Code Simplification**: Removed stale "FIXED"/"SOLUTION" comments from `victim_cache.h` per code-simplifier guidelines
+- Version updated to v1.4.3 in CLI, CMakeLists.txt, CITATION.cff, and documentation
+
+### Added
+- **Associativity Test**: New `tests/unit/core/associativity_test.cpp` verifying that hit ratio is monotonically non-decreasing as associativity increases
+- **Cache Analysis Tool**: New `tools/cache_analysis.cpp` to visualize hit rate vs associativity and verify fix effectiveness
+
+### Documentation
+- Updated `README.md` "What's New" section for v1.4.3
+- Updated `docs/developer/architecture.md` — corrected `CacheSet` description and refreshed Future Extensions
+- Updated `docs/features/replacement-policies.md` — added PLRU power-of-2 requirement note
+- Updated `docs/features/victim-cache.md` — code examples now reflect `cachesim` namespace
+
+### Technical Details
+- All coherence protocols (MSI, MESI, MOESI) were audited and verified correct
+- All 20 tests pass (unit, integration, performance)
+
+---
+
 ## [1.4.2] - 2026-02-02
 
 ### Fixed

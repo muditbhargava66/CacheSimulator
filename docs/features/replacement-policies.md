@@ -32,17 +32,18 @@ The Cache Simulator supports multiple cache replacement policies through a plugg
 - **Description**: Approximates LRU using binary tree
 - **Implementation**: Tree-based tracking with fewer bits
 - **Best for**: Hardware-efficient LRU approximation
+- **Requirement**: Associativity must be a power of 2 (2, 4, 8, 16, …)
 - **Configuration**: `"replacementPolicy": "PLRU"`
 
 ## Performance Comparison
 
 | Policy | Memory Overhead | Complexity | Typical Hit Rate |
-|--------|----------------|------------|------------------|
-| LRU    | High           | O(log n)   | Highest          |
-| FIFO   | Low            | O(1)       | Medium           |
-| NRU    | Low            | O(1)       | High             |
-| Random | Minimal        | O(1)       | Low              |
-| PLRU   | Medium         | O(log n)   | High             |
+| ------ | --------------- | ---------- | ---------------- |
+| LRU    | High            | O(log n)   | Highest          |
+| FIFO   | Low             | O(1)       | Medium           |
+| NRU    | Low             | O(1)       | High             |
+| Random | Minimal         | O(1)       | Low              |
+| PLRU   | Medium          | O(log n)   | High             |
 
 ## Configuration Examples
 

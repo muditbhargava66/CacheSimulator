@@ -88,7 +88,7 @@ The foundational data structures in the Cache Simulator are `CacheBlock` and `Ca
 
 - `CacheSet` represents a set of blocks in a set-associative cache:
   - Vector of CacheBlocks
-  - LRU ordering information for replacement
+  - Replacement policy managed via pluggable `ReplacementPolicyBase` instances
 
 These structures are designed to be memory-efficient while still providing all necessary state information for accurate simulation.
 
@@ -457,24 +457,20 @@ This comprehensive testing strategy ensures correctness and robustness.
 
 Planned extensions include:
 
-1. **Additional Cache Levels**: Support for L3 cache and beyond.
+1. **Non-Inclusive Policies**: Support for non-inclusive and exclusive cache hierarchies.
 
-2. **Non-Inclusive Policies**: Support for non-inclusive and exclusive cache hierarchies.
+2. **Advanced Prefetching Algorithms**: Implementation of more sophisticated prefetchers like GHB and Markov predictors.
 
-3. **Advanced Prefetching Algorithms**: Implementation of more sophisticated prefetchers like GHB and Markov predictors.
+3. **GPU Cache Modeling**: Extensions for modeling GPU-specific cache architectures.
 
-4. **GPU Cache Modeling**: Extensions for modeling GPU-specific cache architectures.
+4. **NUMA Topology**: Modeling non-uniform memory access patterns.
 
-5. **NUMA Topology**: Modeling non-uniform memory access patterns.
+5. **Graphical Interface**: Development of a GUI for visualization and configuration.
 
-6. **Graphical Interface**: Development of a GUI for visualization and configuration.
+6. **Dynamic Trace Generation**: Integration with instruction-level simulators.
 
-7. **Dynamic Trace Generation**: Integration with instruction-level simulators.
+7. **Machine Learning Integration**: Using ML techniques for prefetching and replacement.
 
-8. **Machine Learning Integration**: Using ML techniques for prefetching and replacement.
-
-9. **Additional Coherence Protocols**: MSI, MOESI, and directory-based snooping.
-
-10. **Network-on-Chip Modeling**: Detailed NoC simulation for many-core systems.
+8. **Network-on-Chip Modeling**: Detailed NoC simulation for many-core systems.
 
 These extensions will enhance the simulator's capabilities and keep it relevant for future research.

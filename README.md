@@ -2,7 +2,7 @@
 
 # Cache Simulator
 
-![Version](https://img.shields.io/badge/version-1.4.2-blue)
+![Version](https://img.shields.io/badge/version-1.4.3-blue)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-orange)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
@@ -21,14 +21,13 @@
 
 </div>
 
-## What's New in v1.4.0
+## What's New in v1.4.3
 
-- **L3 Cache Support**: Optional third level cache with inclusive policy
-- **MSI/MOESI Protocols**: Extended coherence protocol support
-- **Ring/Torus Interconnects**: New network topologies with hop-based latency
-- **CLI Parser Module**: Refactored command-line parsing for maintainability
-- **Cache Visualization Module**: Extracted visualization code for reusability
-- **Main.cpp Refactoring**: Reduced from 822 to 442 lines (-46%)
+- **Cache Associativity Bug Fix**: Hit ratio no longer decreases with increasing associativity
+- **PLRU Correctness**: Fixed floating-point truncation in tree-walk depth; added power-of-2 guard
+- **Victim Cache Fixes**: `getAllValidAddresses()` no longer drops address 0; `invalidateBlocksInRange()` no longer corrupts FIFO indices
+- **Dead Code Removal**: Removed unused `lruOrder`/`fifoOrder`/`nextFifoIndex` from `CacheSet`
+- **Namespace Cleanup**: `VictimBlock`/`VictimCache` now properly in `cachesim` namespace
 
 ## Key Features
 
@@ -286,7 +285,7 @@ If you use this simulator in your research, please cite:
 @software{CacheSimulator2026,
   author = {Mudit Bhargava},
   title = {Cache Simulator: A C++20 Cache and Memory Hierarchy Simulator},
-  version = {1.4.1},
+  version = {1.4.3},
   year = {2026},
   url = {https://github.com/muditbhargava66/CacheSimulator}
 }

@@ -38,13 +38,6 @@ Cache::Cache(const CacheConfig &config)
   for (int setIdx = 0; setIdx < numSets; ++setIdx) {
     auto &set = sets[setIdx];
     set.blocks.resize(associativity);
-    set.lruOrder.resize(associativity);
-    set.fifoOrder.resize(associativity);
-
-    // Initialize LRU and FIFO order
-    std::iota(set.lruOrder.begin(), set.lruOrder.end(), 0);
-    std::iota(set.fifoOrder.begin(), set.fifoOrder.end(), 0);
-    set.nextFifoIndex = 0;
 
     // Create replacement policy for this set
     replacementPolicies[setIdx] =
@@ -156,20 +149,24 @@ bool Cache::access(uint32_t address, bool isWrite,
 
 // Helper to get tag and set index for an address
 std::pair<uint32_t, int> Cache::getTagAndSet(uint32_t address) const {
-  uint32_t tag = address / blockSize;
-  int setIndex = (address / blockSize) % numSets;
+  uint32_t blockNumber = address / blockSize;
+  int setIndex = blockNumber % numSets;
+  uint32_t tag = blockNumber / numSets;
   return {tag, setIndex};
 }
 
 // Find a victim block for replacement
 int Cache::findVictim(const CacheSet &set, int setIndex) const {
-  // Create valid blocks vector
-  std::vector<bool> validBlocks(associativity);
+  // Prefer invalid (empty) blocks first — ensures all ways are filled
+  // before any eviction occurs
   for (int i = 0; i < associativity; ++i) {
-    validBlocks[i] = set.blocks[i].valid;
+    if (!set.blocks[i].valid) {
+      return i;
+    }
   }
 
-  // Use replacement policy to select victim
+  // All blocks are valid — use replacement policy to select victim
+  std::vector<bool> validBlocks(associativity, true);
   return replacementPolicies[setIndex]->selectVictim(validBlocks);
 }
 
